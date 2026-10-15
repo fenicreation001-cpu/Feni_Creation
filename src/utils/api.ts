@@ -1,4 +1,4 @@
-import { Bill, CompanySettings, Party, Payment, Purchase, Worker } from '../types';
+import { Bill, CompanySettings, Party, Payment, Purchase, Worker, TransactionCategory } from '../types';
 import { getBillPendingAmount } from './billCalculations';
 
 // API BASE URL from environment variable (e.g. VITE_API_BASE_URL) if deployed separately
@@ -307,7 +307,164 @@ const defaultPayments: Payment[] = [
     amount: 32025,
     paymentMethod: 'Bank Transfer',
     notes: 'Supplier payment for thread purchase',
+    category: 'Material Supplier',
     createdAt: '2026-07-21T11:00:00.000Z',
+  },
+];
+
+export const defaultCategories: TransactionCategory[] = [
+  // Credit Categories
+  {
+    id: 'cat_c1',
+    name: 'Textile Customer',
+    gujaratiName: '૧. ટેક્સટાઇલ ગ્રાહક (Textile Customer)',
+    type: 'Credit',
+    color: '#16a34a',
+    description: 'Customer sales receipts & textile billing collections',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_c2',
+    name: 'Jobwork Receipt',
+    gujaratiName: '૨. જોબવર્ક આવક (Jobwork Receipt)',
+    type: 'Credit',
+    color: '#059669',
+    description: 'Embroidery and jacquard jobwork charges received',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_c3',
+    name: 'Scrap & Cut-Piece Sale',
+    gujaratiName: '૩. વેસ્ટ / કટ પીસ વેચાણ (Scrap Sale)',
+    type: 'Credit',
+    color: '#0d9488',
+    description: 'Income from selling fabric scrap, waste yarn or cut pieces',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_c4',
+    name: 'Other Income',
+    gujaratiName: '૪. અન્ય આવક / વ્યાજ (Other Income)',
+    type: 'Credit',
+    color: '#2563eb',
+    description: 'Miscellaneous deposits, refunds or credit adjustments',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  // Debit Categories
+  {
+    id: 'cat_d1',
+    name: 'Material Supplier',
+    gujaratiName: '૧. મટિરિયલ સપ્લાયર (Material Supplier)',
+    type: 'Debit',
+    color: '#ea580c',
+    description: 'Purchase payments for yarn, threads, fabric, needles & zari',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_d2',
+    name: 'Worker Salary / Advance',
+    gujaratiName: '૨. કારીગર પગાર / ઉપાડ (Worker Salary/Advance)',
+    type: 'Debit',
+    color: '#0284c7',
+    description: 'Karigar monthly wages, advance salary or overtime payouts',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_d3',
+    name: 'Electricity & Power Bill',
+    gujaratiName: '૩. લાઈટ બિલ / પાવર (Electricity Bill)',
+    type: 'Debit',
+    color: '#d97706',
+    description: 'Factory electricity, GEB tariff or power bill payments',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_d4',
+    name: 'Machine Maintenance & Oil',
+    gujaratiName: '૪. મશીન રીપેરીંગ & ઓઈલ (Maintenance & Oil)',
+    type: 'Debit',
+    color: '#7c3aed',
+    description: 'Embroidery machine repairs, needles, spares & machine oil',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_d5',
+    name: 'Factory Rent',
+    gujaratiName: '૫. ફેક્ટરી / ગોડાઉન ભાડું (Factory Rent)',
+    type: 'Debit',
+    color: '#e11d48',
+    description: 'Industrial shed, workshop or godown monthly rent',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_d6',
+    name: 'Tea, Snacks & Refreshment',
+    gujaratiName: '૬. ચા-નાસ્તો / પરચુરણ (Tea & Snacks)',
+    type: 'Debit',
+    color: '#b45309',
+    description: 'Daily staff tea, snacks, water jars and food expense',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_d7',
+    name: 'Transport & Tempo Bhadu',
+    gujaratiName: '૭. ટેમ્પો ભાડું & ટ્રાન્સપોર્ટ (Transport)',
+    type: 'Debit',
+    color: '#4f46e5',
+    description: 'Goods tempo delivery, freight, parcel & courier charges',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_d8',
+    name: 'Packing Material',
+    gujaratiName: '૮. પેકિંગ મટિરિયલ (Packing Material)',
+    type: 'Debit',
+    color: '#0891b2',
+    description: 'Plastic rolls, carton boxes, stickers, tape & packing bags',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_d9',
+    name: 'GST & Government Tax',
+    gujaratiName: '૯. જીએસટી / સરકારી ટેક્સ (GST / Tax)',
+    type: 'Debit',
+    color: '#dc2626',
+    description: 'GST challan payment, professional tax or government duties',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  // Both Categories
+  {
+    id: 'cat_b1',
+    name: 'Expense / Kharch',
+    gujaratiName: 'સામાન્ય ફેક્ટરી / ઓફિસ ખર્ચ (Expense / Kharch)',
+    type: 'Both',
+    color: '#9333ea',
+    description: 'General operating expenses, stationery & utility costs',
+    isDefault: true,
+    createdAt: '2026-01-01',
+  },
+  {
+    id: 'cat_b2',
+    name: 'Other',
+    gujaratiName: 'અન્ય વ્યવહાર (Other)',
+    type: 'Both',
+    color: '#64748b',
+    description: 'Miscellaneous credit or debit adjustments',
+    isDefault: true,
+    createdAt: '2026-01-01',
   },
 ];
 
@@ -330,22 +487,17 @@ export function setCustomApiBase(url: string): void {
     } else {
       localStorage.removeItem('feni_api_url');
     }
-    isStaticHostDetected = false;
+    // API Base URL updated
   } catch {}
 }
 
 export function isStaticHostMode(): boolean {
-  return isStaticHostDetected && !getCustomApiBase();
+  return false;
 }
 
-// Safe fetch wrapper that handles non-JSON / HTML responses (e.g. Netlify static server fallback)
+// Live fetch wrapper that communicates with backend API routes and MongoDB Atlas
 async function safeFetchJson<T>(url: string, options?: RequestInit): Promise<T | null> {
   const apiBase = getCustomApiBase();
-  
-  // If static host without custom backend API is detected, bypass network calls to avoid HTML responses
-  if (!apiBase && isStaticHostDetected) {
-    return null;
-  }
 
   try {
     const fullUrl = apiBase ? `${apiBase}${url}` : url;
@@ -358,17 +510,15 @@ async function safeFetchJson<T>(url: string, options?: RequestInit): Promise<T |
     });
 
     const contentType = response.headers.get('content-type') || '';
-    if (response.ok && contentType.includes('application/json')) {
-      return (await response.json()) as T;
-    }
-
-    // If relative API call returned HTML (e.g., Netlify index.html rewrite), mark static host
-    if (!apiBase && contentType.includes('text/html')) {
-      isStaticHostDetected = true;
-      console.info('[Feni ERP] Netlify static host detected. Operating seamlessly in client LocalStorage database mode.');
+    if (contentType.includes('application/json')) {
+      const data = await response.json();
+      if (!response.ok) {
+        console.warn(`API request to ${url} returned ${response.status}:`, data);
+      }
+      return data as T;
     }
   } catch (err) {
-    console.warn(`API request to ${url} failed or returned non-JSON. Operating in local storage mode.`, err);
+    console.warn(`API request to ${url} error:`, err);
   }
   return null;
 }
@@ -580,6 +730,7 @@ export const apiClient = {
   },
 
   // PURCHASES
+  // PURCHASES / RAW MATERIALS
   async getPurchases(): Promise<Purchase[]> {
     const remote = await safeFetchJson<Purchase[]>('/api/purchases');
     if (remote && Array.isArray(remote)) {
@@ -589,31 +740,47 @@ export const apiClient = {
     return getLocal<Purchase[]>('feni_purchases', defaultPurchases);
   },
 
-  async savePurchase(purchase: Partial<Purchase>): Promise<Purchase> {
-    const isEdit = !!purchase.id;
-    const method = isEdit ? 'PUT' : 'POST';
-    const endpoint = isEdit ? `/api/purchases/${purchase.id}` : '/api/purchases';
+  async getMaterials(): Promise<Purchase[]> {
+    return this.getPurchases();
+  },
 
-    const remote = await safeFetchJson<any>(endpoint, {
+  async savePurchase(purchase: Partial<Purchase>): Promise<Purchase> {
+    const rawId = String(purchase.id || '').trim();
+    const cleanId = rawId.replace(/_\d{4}-\d{2}$/, '');
+    const isEdit = !!cleanId && !cleanId.startsWith('temp_');
+    const method = isEdit ? 'PUT' : 'POST';
+    const endpoint = isEdit ? `/api/purchases/${cleanId}` : '/api/purchases';
+    const payload = { ...purchase, id: isEdit ? cleanId : undefined };
+
+    let remote = await safeFetchJson<any>(endpoint, {
       method,
-      body: JSON.stringify(purchase),
+      body: JSON.stringify(payload),
     });
+
+    // If PUT fails on server (e.g. record not in Mongo yet), fallback to POST
+    if (isEdit && (!remote || remote.error)) {
+      remote = await safeFetchJson<any>('/api/purchases', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    }
 
     const current = getLocal<Purchase[]>('feni_purchases', defaultPurchases);
     let updatedItem: Purchase;
 
-    const savedFromRemote = remote?.purchase || (remote?.id ? remote : null);
+    const savedFromRemote = remote?.purchase || remote?.material || (remote?.id ? remote : null);
 
     if (savedFromRemote && savedFromRemote.id) {
       updatedItem = savedFromRemote;
     } else {
       updatedItem = {
-        id: purchase.id || 'pur_' + Date.now(),
+        id: cleanId || 'pur_' + Date.now(),
         purchaseNo: purchase.purchaseNo || 'PUR-' + Date.now(),
         supplierId: purchase.supplierId || '',
         supplierName: purchase.supplierName || '',
         supplierGstin: purchase.supplierGstin || '',
         date: purchase.date || new Date().toISOString().split('T')[0],
+        materialName: purchase.materialName || '',
         items: purchase.items || [],
         subtotal: purchase.subtotal || 0,
         cgst: purchase.cgst || 0,
@@ -630,18 +797,28 @@ export const apiClient = {
     }
 
     const nextList = isEdit
-      ? current.map((p) => (p.id === updatedItem.id || (p as any)._id === updatedItem.id ? updatedItem : p))
+      ? current.map((p) => (p.id === updatedItem.id || (p as any)._id === updatedItem.id || p.purchaseNo === updatedItem.purchaseNo ? updatedItem : p))
       : [updatedItem, ...current];
 
     setLocal('feni_purchases', nextList);
     return updatedItem;
   },
 
+  async saveMaterial(material: Partial<Purchase>): Promise<Purchase> {
+    return this.savePurchase(material);
+  },
+
   async deletePurchase(id: string): Promise<boolean> {
-    await safeFetchJson(`/api/purchases/${id}`, { method: 'DELETE' });
+    const rawId = String(id || '').trim();
+    const cleanId = rawId.replace(/_\d{4}-\d{2}$/, '');
+    await safeFetchJson(`/api/purchases/${cleanId}`, { method: 'DELETE' });
     const current = getLocal<Purchase[]>('feni_purchases', defaultPurchases);
-    setLocal('feni_purchases', current.filter((p) => p.id !== id && (p as any)._id !== id));
+    setLocal('feni_purchases', current.filter((p) => p.id !== cleanId && p.id !== rawId && (p as any)._id !== cleanId && p.purchaseNo !== cleanId));
     return true;
+  },
+
+  async deleteMaterial(id: string): Promise<boolean> {
+    return this.deletePurchase(id);
   },
 
   // WORKERS
@@ -760,6 +937,8 @@ export const apiClient = {
       updatedItem = {
         id: payment.id || 'pay_' + Date.now(),
         date: payment.date || new Date().toISOString().split('T')[0],
+        details: payment.details || payment.partyName || '',
+        category: payment.category || 'Other',
         partyId: payment.partyId || '',
         partyName: payment.partyName || '',
         type: payment.type || 'Received',
@@ -783,6 +962,65 @@ export const apiClient = {
     await safeFetchJson(`/api/payments/${id}`, { method: 'DELETE' });
     const current = getLocal<Payment[]>('feni_payments', defaultPayments);
     setLocal('feni_payments', current.filter((p) => p.id !== id));
+    return true;
+  },
+
+  // CATEGORIES CRUD
+  async getCategories(): Promise<TransactionCategory[]> {
+    const remote = await safeFetchJson<TransactionCategory[]>('/api/categories');
+    const local = getLocal<TransactionCategory[]>('feni_categories', defaultCategories);
+    if (remote && Array.isArray(remote) && remote.length > 0) {
+      const remoteIds = new Set(remote.map((c) => c.id || (c as any)._id));
+      const localOnly = local.filter((c) => c.id && !remoteIds.has(c.id));
+      const merged = [...remote, ...localOnly];
+      setLocal('feni_categories', merged);
+      return merged;
+    }
+    return local;
+  },
+
+  async saveCategory(category: Partial<TransactionCategory>): Promise<TransactionCategory> {
+    const isEdit = !!category.id;
+    const method = isEdit ? 'PUT' : 'POST';
+    const endpoint = isEdit ? `/api/categories/${category.id}` : '/api/categories';
+
+    const remote = await safeFetchJson<any>(endpoint, {
+      method,
+      body: JSON.stringify(category),
+    });
+
+    const current = getLocal<TransactionCategory[]>('feni_categories', defaultCategories);
+    let updatedItem: TransactionCategory;
+
+    const savedFromRemote = remote?.category || (remote?.id ? remote : null);
+
+    if (savedFromRemote && savedFromRemote.id) {
+      updatedItem = savedFromRemote;
+    } else {
+      updatedItem = {
+        id: category.id || 'cat_' + Date.now(),
+        name: category.name || 'General',
+        gujaratiName: category.gujaratiName || category.name || '',
+        type: category.type || 'Both',
+        color: category.color || '#3b82f6',
+        description: category.description || '',
+        isDefault: category.isDefault ?? false,
+        createdAt: category.createdAt || new Date().toISOString(),
+      };
+    }
+
+    const nextList = isEdit
+      ? current.map((c) => (c.id === updatedItem.id ? updatedItem : c))
+      : [updatedItem, ...current];
+
+    setLocal('feni_categories', nextList);
+    return updatedItem;
+  },
+
+  async deleteCategory(id: string): Promise<boolean> {
+    await safeFetchJson(`/api/categories/${id}`, { method: 'DELETE' });
+    const current = getLocal<TransactionCategory[]>('feni_categories', defaultCategories);
+    setLocal('feni_categories', current.filter((c) => c.id !== id));
     return true;
   },
 

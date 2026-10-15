@@ -1,7 +1,11 @@
+import {
+  Refresh as RefreshIcon,
+  BugReport as BugReportIcon,
+} from '@mui/icons-material';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Box, Typography, Button, Paper, Container } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import BugReportIcon from '@mui/icons-material/BugReport';
+
+
 
 interface Props {
   children: ReactNode;
@@ -97,7 +101,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 variant="contained"
                 startIcon={<RefreshIcon />}
                 onClick={this.handleReload}
-                sx={{ bgcolor: '#4f46e5', px: 3, py: 1, fontWeight: 700, '&:hover': { bgcolor: '#4338ca' } }}
+                sx={{ bgcolor: '#2563eb', px: 3, py: 1, fontWeight: 700, '&:hover': { bgcolor: '#1d4ed8' } }}
               >
                 એપ રિફ્રેશ કરો (Reload App)
               </Button>

@@ -32,6 +32,7 @@ export interface Bill {
   partyAddress?: string;
   partyContactPerson?: string;
   date: string;
+  invoiceDate?: string;
   dueDate?: string;
   deliveryDate?: string;
   deliveryLocation?: string;
@@ -124,6 +125,7 @@ export interface Worker {
   mobile: string;
   role: string;
   monthlySalary: number;
+  salary?: number;
   advancePaid: number;
   advances?: AdvanceEntry[];
   bonus: number;
@@ -152,11 +154,24 @@ export interface Party {
   createdAt: string;
 }
 
+export interface TransactionCategory {
+  id: string;
+  name: string;
+  gujaratiName?: string;
+  type: 'Credit' | 'Debit' | 'Both';
+  color?: string; // Hex color code or css color
+  description?: string;
+  isDefault?: boolean;
+  createdAt?: string;
+}
+
 export interface Payment {
   id: string;
   date: string;
-  partyId: string;
-  partyName: string;
+  details?: string;
+  category?: string;
+  partyId?: string;
+  partyName?: string;
   type: 'Received' | 'Paid';
   refInvoiceNo?: string;
   amount: number;

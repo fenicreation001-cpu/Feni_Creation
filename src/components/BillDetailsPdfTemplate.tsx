@@ -59,7 +59,7 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
       style={{
         width: '760px',
         backgroundColor: '#ffffff',
-        color: '#0f172a',
+        color: '#000000',
         padding: '24px',
         fontFamily: fontStack,
         boxSizing: 'border-box',
@@ -68,27 +68,27 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
       }}
     >
       {/* Document Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #6366f1', paddingBottom: '14px', marginBottom: '18px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2.5px solid #1e40af', paddingBottom: '14px', marginBottom: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
           {settings.logoUrl ? (
             <img
               src={settings.logoUrl}
               alt="Logo"
-              style={{ width: '46px', height: '46px', borderRadius: '8px', objectFit: 'contain' }}
+              style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'contain' }}
             />
           ) : (
             <div
               style={{
-                width: '44px',
-                height: '44px',
+                width: '46px',
+                height: '46px',
                 borderRadius: '8px',
-                backgroundColor: '#4f46e5',
+                backgroundColor: '#1e40af',
                 color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: '16px',
+                fontWeight: 900,
+                fontSize: '18px',
                 flexShrink: 0,
               }}
             >
@@ -96,21 +96,21 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
             </div>
           )}
           <div style={{ maxWidth: '460px' }}>
-            <h1 style={{ margin: 0, color: '#312e81', fontSize: '22px', fontWeight: 800, letterSpacing: '-0.5px', lineHeight: '1.2' }}>
+            <h1 style={{ margin: 0, color: '#090d16', fontSize: '22px', fontWeight: 900, letterSpacing: '-0.5px', lineHeight: '1.2' }}>
               {settings.companyName || 'FENI CREATION'}
             </h1>
-            <p style={{ margin: '3px 0 0', color: '#4f46e5', fontSize: '12px', fontWeight: 700, lineHeight: '1.3' }}>
+            <p style={{ margin: '3px 0 0', color: '#1d4ed8', fontSize: '12px', fontWeight: 800, lineHeight: '1.3' }}>
               {settings.tagline || (isGu ? 'એમ્બ્રોઇડરી અને ટેક્સટાઇલ મેન્યુફેક્ચરિંગ' : 'Embroidery & Textile Manufacturing')}
             </p>
-            <p style={{ margin: '3px 0 0', color: '#334155', fontSize: '10px', fontWeight: 700, lineHeight: '1.3' }}>
+            <p style={{ margin: '3px 0 0', color: '#0f172a', fontSize: '10.5px', fontWeight: 800, lineHeight: '1.3' }}>
               GSTIN: {settings.gstin || '24ABCDE1234F1Z5'}
             </p>
-            <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '10px', lineHeight: '1.3' }}>
+            <p style={{ margin: '2px 0 0', color: '#1e293b', fontSize: '10.5px', fontWeight: 700, lineHeight: '1.3' }}>
               <span>{isGu ? 'મોબાઇલ' : 'Mobile'}: {(settings.phone || '+91 98765 43210').replace(/\|\|+/g, '|').replace(/\s*\|\s*/g, ' | ')}</span>
               <span> | </span>
               <span>Email: {settings.email || 'fenicreation001@gmail.com'}</span>
             </p>
-            <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '10px', lineHeight: '1.4' }}>
+            <p style={{ margin: '4px 0 0', color: '#1e293b', fontSize: '10.5px', fontWeight: 600, lineHeight: '1.4' }}>
               {settings.address || 'Plot No. 124, GIDC Industrial Estate, Varachha, Surat - 395006, Gujarat, India'}
             </p>
           </div>
@@ -118,14 +118,14 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
 
         <div style={{ textAlign: 'right' }}>
           <div>
-            <svg width={badgeWidth} height="26" viewBox={`0 0 ${badgeWidth} 26`} style={{ display: 'inline-block', verticalAlign: 'middle', marginBottom: '6px' }}>
-              <rect x="0" y="0" width={badgeWidth} height="26" rx="13" fill="#4f46e5" />
+            <svg width={badgeWidth} height="28" viewBox={`0 0 ${badgeWidth} 28`} style={{ display: 'inline-block', verticalAlign: 'middle', marginBottom: '6px' }}>
+              <rect x="0" y="0" width={badgeWidth} height="28" rx="14" fill="#1e40af" />
               <text
                 x={badgeWidth / 2}
-                y="13"
+                y="14"
                 fill="#ffffff"
                 fontSize="11"
-                fontWeight="800"
+                fontWeight="900"
                 fontFamily={fontStack}
                 dominantBaseline="central"
                 textAnchor="middle"
@@ -135,10 +135,10 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
               </text>
             </svg>
           </div>
-          <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#1e1b4b', lineHeight: '1.4' }}>
-            {isGu ? 'ઇનવોઇસ નં:' : 'Invoice No:'} <span style={{ color: '#4f46e5' }}>#{bill.invoiceNo}</span>
+          <p style={{ margin: 0, fontSize: '13px', fontWeight: 900, color: '#090d16', lineHeight: '1.4' }}>
+            {isGu ? 'ઇનવોઇસ નં:' : 'Invoice No:'} <span style={{ color: '#1d4ed8' }}>#{bill.invoiceNo}</span>
           </p>
-          <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#64748b', fontWeight: 600, lineHeight: '1.4' }}>
+          <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#1e293b', fontWeight: 800, lineHeight: '1.4' }}>
             {isGu ? 'તારીખ:' : 'Date:'} {formatDate(bill.date)}
           </p>
         </div>
@@ -147,7 +147,7 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
       {/* Top Cards: Customer & Party Details | Invoice & Challan Info */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
         {/* Card 1: Customer */}
-        <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', boxSizing: 'border-box' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
           {(() => {
             const matchedParty = parties?.find(
               (p) => p.id === bill.partyId || p.name === bill.partyName || p.name?.toLowerCase() === bill.partyName?.toLowerCase()
@@ -162,31 +162,31 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '13px', color: '#4f46e5' }}>👤</span>
-                    <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <span style={{ fontSize: '13px', color: '#1e40af' }}>👤</span>
+                    <span style={{ fontSize: '10.5px', fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       {isGu ? 'ગ્રાહક અને પાર્ટી વિગતો' : 'CUSTOMER & PARTY DETAILS'}
                     </span>
                   </div>
                   {partyType ? (
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#0369a1', backgroundColor: '#e0f2fe', padding: '2px 8px', borderRadius: '10px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 800, color: '#0369a1', backgroundColor: '#e0f2fe', padding: '2px 8px', borderRadius: '10px', border: '1px solid #bae6fd' }}>
                       {partyType}
                     </span>
                   ) : null}
                 </div>
 
-                <h2 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 800, color: '#0f172a', lineHeight: '1.3' }}>{bill.partyName}</h2>
+                <h2 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 900, color: '#090d16', lineHeight: '1.3' }}>{bill.partyName}</h2>
 
-                <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#1e293b', lineHeight: '1.4' }}>
-                  <b>{isGu ? 'સંપર્ક વ્યક્તિ:' : 'Contact Person:'}</b> {contactPerson}
+                <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#0f172a', lineHeight: '1.4' }}>
+                  <b style={{ color: '#1e293b', fontWeight: 800 }}>{isGu ? 'સંપર્ક વ્યક્તિ:' : 'Contact Person:'}</b> <span style={{ fontWeight: 700 }}>{contactPerson}</span>
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#1e293b', lineHeight: '1.4' }}>
-                  <b>GSTIN Number:</b> <span style={{ fontWeight: 700, fontFamily: 'monospace', color: '#0f172a' }}>{gstin}</span>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#0f172a', lineHeight: '1.4' }}>
+                  <b style={{ color: '#1e293b', fontWeight: 800 }}>GSTIN Number:</b> <span style={{ fontWeight: 800, fontFamily: 'monospace', color: '#0f172a' }}>{gstin}</span>
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#334155', lineHeight: '1.4' }}>
-                  <b>{isGu ? 'મોબાઇલ નંબર:' : 'Mobile Number:'}</b> {mobile}
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#0f172a', lineHeight: '1.4' }}>
+                  <b style={{ color: '#1e293b', fontWeight: 800 }}>{isGu ? 'મોબાઇલ નંબર:' : 'Mobile Number:'}</b> <span style={{ fontWeight: 700 }}>{mobile}</span>
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#475569', lineHeight: '1.4' }}>
-                  <b>{isGu ? 'સરનામું અને શહેર:' : 'Full Address & City:'}</b> {address}
+                <p style={{ margin: '4px 0 0', fontSize: '10.5px', color: '#1e293b', lineHeight: '1.4' }}>
+                  <b style={{ color: '#1e293b', fontWeight: 800 }}>{isGu ? 'સરનામું અને શહેર:' : 'Full Address & City:'}</b> <span style={{ fontWeight: 600 }}>{address}</span>
                 </p>
               </>
             );
@@ -194,62 +194,62 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
         </div>
 
         {/* Card 2: Invoice & Challan Info */}
-        <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', boxSizing: 'border-box' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-            <span style={{ fontSize: '13px', color: '#4f46e5' }}>📅</span>
-            <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <span style={{ fontSize: '13px', color: '#1e40af' }}>📅</span>
+            <span style={{ fontSize: '10.5px', fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {isGu ? 'ઇનવોઇસ અને ચલાણ માહિતી' : 'INVOICE & CHALLAN INFO'}
             </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
-            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1px solid #f1f5f9', boxSizing: 'border-box' }}>
-              <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, display: 'block', lineHeight: '1.2' }}>
+            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1.5px solid #e2e8f0', boxSizing: 'border-box' }}>
+              <span style={{ fontSize: '9.5px', color: '#1e293b', fontWeight: 800, display: 'block', lineHeight: '1.2' }}>
                 {isGu ? 'ઇનવોઇસ નં' : 'Invoice No'}
               </span>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#4f46e5', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{bill.invoiceNo}</span>
+              <span style={{ fontSize: '11.5px', fontWeight: 900, color: '#1d4ed8', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{bill.invoiceNo}</span>
             </div>
-            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1px solid #f1f5f9', boxSizing: 'border-box' }}>
-              <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, display: 'block', lineHeight: '1.2' }}>
+            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1.5px solid #e2e8f0', boxSizing: 'border-box' }}>
+              <span style={{ fontSize: '9.5px', color: '#1e293b', fontWeight: 800, display: 'block', lineHeight: '1.2' }}>
                 {isGu ? 'ચલાણ નં' : 'Challan No'}
               </span>
-              <span style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{bill.challanNo || '-'}</span>
+              <span style={{ fontSize: '11.5px', fontWeight: 900, color: '#090d16', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{bill.challanNo || '-'}</span>
             </div>
-            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1px solid #f1f5f9', boxSizing: 'border-box' }}>
-              <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, display: 'block', lineHeight: '1.2' }}>
+            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1.5px solid #e2e8f0', boxSizing: 'border-box' }}>
+              <span style={{ fontSize: '9.5px', color: '#1e293b', fontWeight: 800, display: 'block', lineHeight: '1.2' }}>
                 {isGu ? 'ઇનવોઇસ તા.' : 'Invoice Date'}
               </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#334155', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{formatDate(bill.date)}</span>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{formatDate(bill.date)}</span>
             </div>
-            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1px solid #f1f5f9', boxSizing: 'border-box' }}>
-              <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, display: 'block', lineHeight: '1.2' }}>
+            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1.5px solid #e2e8f0', boxSizing: 'border-box' }}>
+              <span style={{ fontSize: '9.5px', color: '#1e293b', fontWeight: 800, display: 'block', lineHeight: '1.2' }}>
                 {isGu ? 'ચલાણ તા.' : 'Challan Date'}
               </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#334155', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{formatDate(bill.dueDate || bill.date)}</span>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{formatDate(bill.dueDate || bill.date)}</span>
             </div>
-            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1px solid #f1f5f9', boxSizing: 'border-box' }}>
-              <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, display: 'block', lineHeight: '1.2' }}>
+            <div style={{ backgroundColor: '#f8fafc', padding: '8px 8px', borderRadius: '8px', border: '1.5px solid #e2e8f0', boxSizing: 'border-box' }}>
+              <span style={{ fontSize: '9.5px', color: '#1e293b', fontWeight: 800, display: 'block', lineHeight: '1.2' }}>
                 {isGu ? 'ડિલિવરી તા.' : 'Delivery Date'}
               </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{bill.deliveryDate ? formatDate(bill.deliveryDate) : formatDate(bill.dueDate || bill.date)}</span>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: '#0369a1', marginTop: '2px', display: 'block', lineHeight: '1.2' }}>{(bill.isWorking || !bill.deliveryDate) ? '-' : formatDate(bill.deliveryDate)}</span>
             </div>
           </div>
 
           {(bill.deliveryLocation || bill.transportName || bill.deliveryPerson || bill.deliveryStatus || bill.deliveryNotes) && (
-            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '10px' }}>
+            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #94a3b8', display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '10.5px' }}>
               {bill.deliveryLocation && (
-                <div><b>{isGu ? 'ડિલિવરી સ્થળ:' : 'Delivery Location:'}</b> <span style={{ color: '#0f172a' }}>{bill.deliveryLocation}</span></div>
+                <div><b style={{ color: '#1e293b', fontWeight: 800 }}>{isGu ? 'ડિલિવરી સ્થળ:' : 'Delivery Location:'}</b> <span style={{ color: '#090d16', fontWeight: 700 }}>{bill.deliveryLocation}</span></div>
               )}
               {bill.transportName && (
-                <div><b>{isGu ? 'ટ્રાન્સપોર્ટ/વાહન:' : 'Transport/Vehicle:'}</b> <span style={{ color: '#0f172a' }}>{bill.transportName}</span></div>
+                <div><b style={{ color: '#1e293b', fontWeight: 800 }}>{isGu ? 'ટ્રાન્સપોર્ટ/વાહન:' : 'Transport/Vehicle:'}</b> <span style={{ color: '#090d16', fontWeight: 700 }}>{bill.transportName}</span></div>
               )}
               {bill.deliveryPerson && (
-                <div><b>{isGu ? 'ડિલિવરી પર્સન/ડ્રાઇવર:' : 'Delivery Person:'}</b> <span style={{ color: '#0f172a' }}>{bill.deliveryPerson}</span></div>
+                <div><b style={{ color: '#1e293b', fontWeight: 800 }}>{isGu ? 'ડિલિવરી પર્સન/ડ્રાઇવર:' : 'Delivery Person:'}</b> <span style={{ color: '#090d16', fontWeight: 700 }}>{bill.deliveryPerson}</span></div>
               )}
               {bill.deliveryStatus && (
-                <div><b>{isGu ? 'સ્ટેટસ:' : 'Status:'}</b> <span style={{ color: '#0284c7', fontWeight: 700 }}>{bill.deliveryStatus}</span></div>
+                <div><b style={{ color: '#1e293b', fontWeight: 800 }}>{isGu ? 'સ્ટેટસ:' : 'Status:'}</b> <span style={{ color: '#0369a1', fontWeight: 800 }}>{bill.deliveryStatus}</span></div>
               )}
               {bill.deliveryNotes && (
-                <div style={{ width: '100%' }}><b>{isGu ? 'ડિલિવરી રીમાર્કસ:' : 'Delivery Notes:'}</b> <span style={{ color: '#475569' }}>{bill.deliveryNotes}</span></div>
+                <div style={{ width: '100%' }}><b style={{ color: '#1e293b', fontWeight: 800 }}>{isGu ? 'ડિલિવરી રીમાર્કસ:' : 'Delivery Notes:'}</b> <span style={{ color: '#0f172a', fontWeight: 600 }}>{bill.deliveryNotes}</span></div>
               )}
             </div>
           )}
@@ -258,38 +258,38 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
 
       {/* Billed Items List Table */}
       <div style={{ marginBottom: '18px' }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '13.5px', fontWeight: 900, color: '#090d16' }}>
           {isGu ? 'બિલ વસ્તુઓની યાદી' : 'Billed Items List'} ({(bill.items || []).length})
         </h3>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '11px', borderRadius: '10px', overflow: 'hidden', border: '1px solid #e2e8f0', tableLayout: 'fixed' }}>
+        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '11px', borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #cbd5e1', tableLayout: 'fixed' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f8fafc', color: '#475569', textAlign: 'center' }}>
-              <th style={{ width: '3.5%', padding: '8px 4px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle' }}>#</th>
-              <th style={{ width: '10.5%', padding: '8px 4px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+            <tr style={{ backgroundColor: '#f1f5f9', color: '#0f172a', textAlign: 'center' }}>
+              <th style={{ width: '3.5%', padding: '8px 4px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle' }}>#</th>
+              <th style={{ width: '10.5%', padding: '8px 4px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                 {isGu ? 'ચલાણ તા.' : 'CHALLAN DATE'}
               </th>
-              <th style={{ width: '10%', padding: '8px 4px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+              <th style={{ width: '10%', padding: '8px 4px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                 {isGu ? 'ચલાણ નં.' : 'CHALLAN NO'}
               </th>
-              <th style={{ width: '26%', padding: '8px 6px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle' }}>
+              <th style={{ width: '26%', padding: '8px 6px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle' }}>
                 {isGu ? 'વિગતો / ડિઝાઇન' : 'DESCRIPTION / PARTICULARS'}
               </th>
-              <th style={{ width: '6%', padding: '8px 2px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle' }}>
+              <th style={{ width: '6%', padding: '8px 2px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle' }}>
                 {isGu ? 'લોટ' : 'LOT'}
               </th>
-              <th style={{ width: '7%', padding: '8px 2px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle' }}>
+              <th style={{ width: '7%', padding: '8px 2px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle' }}>
                 {isGu ? 'ભાવ' : 'RATE'}
               </th>
-              <th style={{ width: '6.5%', padding: '8px 2px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle' }}>
+              <th style={{ width: '6.5%', padding: '8px 2px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle' }}>
                 {isGu ? 'પ્લેન' : 'PLAIN'}
               </th>
-              <th style={{ width: '6.5%', padding: '8px 2px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle' }}>
+              <th style={{ width: '6.5%', padding: '8px 2px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle' }}>
                 {isGu ? 'શોર્ટ' : 'SHORT'}
               </th>
-              <th style={{ width: '9.5%', padding: '8px 4px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle' }}>
+              <th style={{ width: '9.5%', padding: '8px 4px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle' }}>
                 {isGu ? 'વટાવ' : 'DISC'}
               </th>
-              <th style={{ width: '14.5%', padding: '8px 6px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', fontWeight: 800, verticalAlign: 'middle' }}>
+              <th style={{ width: '14.5%', padding: '8px 6px', borderBottom: '1.5px solid #cbd5e1', textAlign: 'center', fontSize: '9.5px', fontWeight: 900, color: '#0f172a', verticalAlign: 'middle' }}>
                 {isGu ? 'કુલ રકમ' : 'TOTAL'}
               </th>
             </tr>
@@ -305,24 +305,24 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
               const rowTotal = Math.max(0, payableLot * rate - disc);
 
               return (
-                <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: 700, color: '#64748b', verticalAlign: 'middle' }}>{idx + 1}</td>
-                  <td style={{ padding: '8px 6px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: 600, color: '#334155', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>{formatDate(item.challanDate || bill.dueDate || bill.date)}</td>
-                  <td style={{ padding: '8px 6px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: 800, color: '#4f46e5', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>{item.challanNo || bill.challanNo || '-'}</td>
-                  <td style={{ padding: '8px 8px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', wordBreak: 'break-word', verticalAlign: 'middle' }}>
+                <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 800, color: '#0f172a', verticalAlign: 'middle' }}>{idx + 1}</td>
+                  <td style={{ padding: '8px 6px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 700, color: '#0f172a', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>{formatDate(item.challanDate || bill.dueDate || bill.date)}</td>
+                  <td style={{ padding: '8px 6px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 900, color: '#1d4ed8', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>{item.challanNo || bill.challanNo || '-'}</td>
+                  <td style={{ padding: '8px 8px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', wordBreak: 'break-word', verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'nowrap', gap: '6px' }}>
                       {item.designNo && (() => {
                         const textStr = String(item.designNo);
                         const width = Math.max(46, textStr.length * 7 + 16);
                         return (
                           <svg width={width} height="18" viewBox={`0 0 ${width} 18`} style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}>
-                            <rect x="0" y="0" width={width} height="18" rx="5" fill="#e0f2fe" />
+                            <rect x="0" y="0" width={width} height="18" rx="5" fill="#e0f2fe" stroke="#7dd3fc" strokeWidth="1" />
                             <text
                               x={width / 2}
                               y="9"
                               fill="#0369a1"
-                              fontSize="9"
-                              fontWeight="800"
+                              fontSize="9.5"
+                              fontWeight="900"
                               fontFamily={fontStack}
                               dominantBaseline="central"
                               textAnchor="middle"
@@ -332,17 +332,17 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
                           </svg>
                         );
                       })()}
-                      <span style={{ fontWeight: 700, color: '#0f172a', verticalAlign: 'middle' }}>{item.description || (isGu ? 'વસ્તુ' : 'Item')}</span>
+                      <span style={{ fontWeight: 800, color: '#090d16', verticalAlign: 'middle' }}>{item.description || (isGu ? 'વસ્તુ' : 'Item')}</span>
                     </div>
                   </td>
-                  <td style={{ padding: '8px 3px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: 800, color: '#0f172a', verticalAlign: 'middle' }}>{lot}</td>
-                  <td style={{ padding: '8px 3px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: 600, verticalAlign: 'middle' }}>₹{rate}</td>
-                  <td style={{ padding: '8px 2px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', color: plain > 0 ? '#d97706' : '#94a3b8', verticalAlign: 'middle' }}>{plain > 0 ? plain : '-'}</td>
-                  <td style={{ padding: '8px 2px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', color: short > 0 ? '#dc2626' : '#94a3b8', verticalAlign: 'middle' }}>{short > 0 ? short : '-'}</td>
-                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', color: disc > 0 ? '#dc2626' : '#94a3b8', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '8px 3px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 900, color: '#090d16', verticalAlign: 'middle' }}>{lot}</td>
+                  <td style={{ padding: '8px 3px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 800, color: '#090d16', verticalAlign: 'middle' }}>₹{rate}</td>
+                  <td style={{ padding: '8px 2px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 800, color: plain > 0 ? '#b45309' : '#64748b', verticalAlign: 'middle' }}>{plain > 0 ? plain : '-'}</td>
+                  <td style={{ padding: '8px 2px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 800, color: short > 0 ? '#b91c1c' : '#64748b', verticalAlign: 'middle' }}>{short > 0 ? short : '-'}</td>
+                  <td style={{ padding: '8px 4px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 800, color: disc > 0 ? '#b91c1c' : '#64748b', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
                     {disc > 0 ? `- ₹${disc.toLocaleString('en-IN')}` : '-'}
                   </td>
-                  <td style={{ padding: '8px 6px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: 800, color: '#4f46e5', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '8px 6px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 900, color: '#1d4ed8', whiteSpace: 'nowrap', verticalAlign: 'middle' }}>
                     ₹{rowTotal.toLocaleString('en-IN')}
                   </td>
                 </tr>
@@ -355,12 +355,12 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
       {/* Bottom Cards: Payment Method & Totals Breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '14px' }}>
         {/* Payment Info Card */}
-        <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', boxSizing: 'border-box' }}>
-          <p style={{ margin: '0 0 12px 0', fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
+          <p style={{ margin: '0 0 12px 0', fontSize: '10.5px', fontWeight: 900, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             {isGu ? 'ચૂકવણી વિગત અને પદ્ધતિ' : 'PAYMENT INFO & METHOD'}
           </p>
           <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '11px', color: '#475569', fontWeight: 700 }}>
+            <span style={{ fontSize: '11px', color: '#1e293b', fontWeight: 800 }}>
               {isGu ? 'ચુકવણી સ્થિતિ:' : 'Payment Status:'}
             </span>
             <span
@@ -369,9 +369,9 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
                 padding: '3px 10px',
                 borderRadius: '12px',
                 backgroundColor: isPaid ? '#dcfce7' : '#fee2e2',
-                color: isPaid ? '#15803d' : '#dc2626',
-                border: `1px solid ${isPaid ? '#bbf7d0' : '#fecaca'}`,
-                fontWeight: 800,
+                color: isPaid ? '#15803d' : '#b91c1c',
+                border: `1.5px solid ${isPaid ? '#86efac' : '#fca5a5'}`,
+                fontWeight: 900,
                 fontSize: '11px',
                 fontFamily: fontStack,
               }}
@@ -383,7 +383,7 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
           </div>
           <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '11px', color: '#475569', fontWeight: 700 }}>
+              <span style={{ fontSize: '11px', color: '#1e293b', fontWeight: 800 }}>
                 {isGu ? 'પદ્ધતિ:' : 'Method:'}
               </span>
               <span
@@ -392,9 +392,9 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
                   padding: '3px 10px',
                   borderRadius: '12px',
                   backgroundColor: isPendingStatus ? '#fef3c7' : '#e0f2fe',
-                  color: isPendingStatus ? '#b45309' : '#0284c7',
-                  border: `1px solid ${isPendingStatus ? '#fde68a' : '#bae6fd'}`,
-                  fontWeight: 800,
+                  color: isPendingStatus ? '#92400e' : '#0369a1',
+                  border: `1.5px solid ${isPendingStatus ? '#fcd34d' : '#7dd3fc'}`,
+                  fontWeight: 900,
                   fontSize: '11px',
                   fontFamily: fontStack,
                 }}
@@ -403,19 +403,19 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
               </span>
             </div>
             {isPaid && bill.paymentDate && (
-              <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700 }}>
+              <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 800 }}>
                 {isGu ? 'તારીખ:' : 'Date:'} {formatDate(bill.paymentDate)}
               </span>
             )}
           </div>
 
           {bill.paymentMethod === 'Cheque' && (
-            <div style={{ padding: '8px 12px', backgroundColor: '#f1f5f9', borderRadius: '6px', borderLeft: '3px solid #0284c7', marginBottom: (Boolean(bill.notes) || extraCharges > 0) ? '8px' : '0px', fontSize: '11px', color: '#1e293b' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-                <span>{isGu ? 'ચેક નં:' : 'Cheque No:'} <strong style={{ fontWeight: 800 }}>{bill.chequeNo || 'N/A'}</strong></span>
-                {bill.chequeDate && <span>{isGu ? 'તારીખ:' : 'Date:'} <strong style={{ fontWeight: 800 }}>{formatDate(bill.chequeDate)}</strong></span>}
+            <div style={{ padding: '8px 12px', backgroundColor: '#f1f5f9', borderRadius: '6px', borderLeft: '3.5px solid #0284c7', marginBottom: (Boolean(bill.notes) || extraCharges > 0) ? '8px' : '0px', fontSize: '11px', color: '#090d16' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
+                <span>{isGu ? 'ચેક નં:' : 'Cheque No:'} <strong style={{ fontWeight: 900 }}>{bill.chequeNo || 'N/A'}</strong></span>
+                {bill.chequeDate && <span>{isGu ? 'તારીખ:' : 'Date:'} <strong style={{ fontWeight: 900 }}>{formatDate(bill.chequeDate)}</strong></span>}
               </div>
-              {bill.chequeBank && <div style={{ marginTop: '3px', fontWeight: 600, color: '#475569' }}>{isGu ? 'બેંક:' : 'Bank:'} {bill.chequeBank}</div>}
+              {bill.chequeBank && <div style={{ marginTop: '3px', fontWeight: 700, color: '#1e293b' }}>{isGu ? 'બેંક:' : 'Bank:'} {bill.chequeBank}</div>}
             </div>
           )}
 
@@ -426,7 +426,10 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
                 padding: '8px 12px',
                 backgroundColor: '#fffbeb',
                 borderRadius: '6px',
-                borderLeft: '4px solid #d97706',
+                borderLeft: '4px solid #b45309',
+                borderTop: '1px solid #fef3c7',
+                borderRight: '1px solid #fef3c7',
+                borderBottom: '1px solid #fef3c7',
                 fontSize: '11px',
                 color: '#78350f',
                 lineHeight: '1.4',
@@ -438,16 +441,16 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
               }}
             >
               <div style={{ flex: 1, minWidth: '140px' }}>
-                <div style={{ color: '#b45309', fontWeight: 800, fontSize: '10px', textTransform: 'uppercase', marginBottom: '2px', letterSpacing: '0.4px' }}>
+                <div style={{ color: '#92400e', fontWeight: 900, fontSize: '10.5px', textTransform: 'uppercase', marginBottom: '2px', letterSpacing: '0.4px' }}>
                   {isGu ? 'નોંધ / ડિલિવરી સૂચનાઓ:' : 'Notes / Delivery Instructions:'}
                 </div>
-                <div style={{ color: '#78350f', fontWeight: 600, fontSize: '11px' }}>
+                <div style={{ color: '#451a03', fontWeight: 700, fontSize: '11px' }}>
                   {bill.notes || '-'}
                 </div>
               </div>
               {extraCharges > 0 && (
-                <div style={{ textAlign: 'right', whiteSpace: 'nowrap', paddingLeft: '12px', borderLeft: '1px solid #fde68a' }}>
-                  <div style={{ color: '#dc2626', fontWeight: 800, fontSize: '13px' }}>
+                <div style={{ textAlign: 'right', whiteSpace: 'nowrap', paddingLeft: '12px', borderLeft: '1.5px solid #fde68a' }}>
+                  <div style={{ color: '#b91c1c', fontWeight: 900, fontSize: '13px' }}>
                     - ₹{extraCharges.toLocaleString('en-IN')}
                   </div>
                 </div>
@@ -457,21 +460,21 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
         </div>
 
         {/* Totals Breakdown Card */}
-        <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', fontSize: '11px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', fontSize: '11px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ color: '#64748b', textTransform: 'uppercase', fontWeight: 800, fontSize: '9px', letterSpacing: '0.6px', marginBottom: '10px' }}>
+            <div style={{ color: '#1e293b', textTransform: 'uppercase', fontWeight: 900, fontSize: '10px', letterSpacing: '0.6px', marginBottom: '10px' }}>
               {isGu ? 'ગણતરી અને કુલ સરવાળો' : 'CALCULATIONS & SUMMARY'}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #f1f5f9', color: '#475569' }}>
-              <span style={{ fontWeight: 600 }}>{isGu ? 'કુલ બિલિંગ રકમ:' : 'Total Billing Amount:'}</span>
-              <span style={{ fontWeight: 800, color: '#0f172a' }}>₹{grossTotal.toLocaleString('en-IN')}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #cbd5e1', color: '#0f172a' }}>
+              <span style={{ fontWeight: 700 }}>{isGu ? 'કુલ બિલિંગ રકમ:' : 'Total Billing Amount:'}</span>
+              <span style={{ fontWeight: 900, color: '#090d16' }}>₹{grossTotal.toLocaleString('en-IN')}</span>
             </div>
 
             {extraCharges > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #f1f5f9', color: '#e11d48' }}>
-                <span style={{ fontWeight: 600 }}>{isGu ? 'મટીરીયલ / કાપડ બાદ રકમ:' : 'Material/Kapad Amount:'}</span>
-                <span style={{ fontWeight: 800 }}>- ₹{extraCharges.toLocaleString('en-IN')}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #cbd5e1', color: '#b91c1c' }}>
+                <span style={{ fontWeight: 700 }}>{isGu ? 'મટીરીયલ / કાપડ બાદ રકમ:' : 'Material/Kapad Amount:'}</span>
+                <span style={{ fontWeight: 900 }}>- ₹{extraCharges.toLocaleString('en-IN')}</span>
               </div>
             )}
 
@@ -483,24 +486,24 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
               const discPct = Number(discPctNum) || 0;
               const discPctStr = discPct > 0 ? ` (${discPct % 1 === 0 ? discPct.toFixed(0) : discPct.toFixed(2)}%)` : '';
               return (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #f1f5f9', color: '#e11d48' }}>
-                  <span style={{ fontWeight: 600 }}>{isGu ? `કુલ વટાવ${discPctStr}:` : `Total Discount${discPctStr}:`}</span>
-                  <span style={{ fontWeight: 800 }}>- ₹{totalDiscount.toLocaleString('en-IN')}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #cbd5e1', color: '#b91c1c' }}>
+                  <span style={{ fontWeight: 700 }}>{isGu ? `કુલ વટાવ${discPctStr}:` : `Total Discount${discPctStr}:`}</span>
+                  <span style={{ fontWeight: 900 }}>- ₹{totalDiscount.toLocaleString('en-IN')}</span>
                 </div>
               );
             })()}
 
             {taxVal > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #f1f5f9', color: '#7c3aed' }}>
-                <span style={{ fontWeight: 600 }}>{isGu ? 'જીએસટી ટેક્સ (5%):' : 'GST Tax (5%):'}</span>
-                <span style={{ fontWeight: 800 }}>+ ₹{taxVal.toLocaleString('en-IN')}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px dashed #cbd5e1', color: '#6b21a8' }}>
+                <span style={{ fontWeight: 700 }}>{isGu ? 'જીએસટી ટેક્સ (5%):' : 'GST Tax (5%):'}</span>
+                <span style={{ fontWeight: 900 }}>+ ₹{taxVal.toLocaleString('en-IN')}</span>
               </div>
             )}
 
             {roundOff !== 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', color: '#64748b' }}>
-                <span style={{ fontWeight: 600 }}>{isGu ? 'રાઉન્ડ ઓફ:' : 'Round Off:'}</span>
-                <span style={{ fontWeight: 800 }}>{roundOff >= 0 ? `+ ₹${roundOff}` : `- ₹${Math.abs(roundOff)}`}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', color: '#0f172a' }}>
+                <span style={{ fontWeight: 700 }}>{isGu ? 'રાઉન્ડ ઓફ:' : 'Round Off:'}</span>
+                <span style={{ fontWeight: 900 }}>{roundOff >= 0 ? `+ ₹${roundOff}` : `- ₹${Math.abs(roundOff)}`}</span>
               </div>
             )}
           </div>
@@ -510,21 +513,21 @@ export const BillDetailsPdfTemplate: React.FC<BillDetailsPdfTemplateProps> = ({ 
             style={{
               margin: '12px 0 0 0',
               padding: '10px 14px',
-              backgroundColor: '#f0f7ff',
-              border: '1px solid #bfdbfe',
+              backgroundColor: '#eff6ff',
+              border: '2px solid #3b82f6',
               borderRadius: '8px',
               boxSizing: 'border-box',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ fontWeight: 800, color: '#1e3a8a', fontSize: '11px' }}>
+              <span style={{ fontWeight: 900, color: '#1e3a8a', fontSize: '12px' }}>
                 {isGu ? 'કુલ રકમ:' : 'Total Amount:'}
               </span>
-              <span style={{ fontWeight: 800, color: '#1e3a8a', fontSize: '14px' }}>
+              <span style={{ fontWeight: 900, color: '#1e3a8a', fontSize: '15px' }}>
                 ₹{netTotal.toLocaleString('en-IN')}
               </span>
             </div>
-            <div style={{ fontSize: '9.5px', color: '#2563eb', fontWeight: 600, fontStyle: 'italic', paddingTop: '6px', borderTop: '1px dotted #93c5fd' }}>
+            <div style={{ fontSize: '10px', color: '#1d4ed8', fontWeight: 800, fontStyle: 'italic', paddingTop: '6px', borderTop: '1px solid #93c5fd' }}>
               {numberToWords(netTotal, isGu ? 'gu' : 'en')}
             </div>
           </div>

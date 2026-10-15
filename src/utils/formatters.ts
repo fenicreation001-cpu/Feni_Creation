@@ -1,10 +1,11 @@
 export const formatRupees = (amount: number | string | undefined | null): string => {
   const num = Number(amount) || 0;
+  const hasDecimals = Math.abs(num % 1) > 0.0001;
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
+    minimumFractionDigits: hasDecimals ? 2 : 0,
     maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
   }).format(num);
 };
 
@@ -44,17 +45,18 @@ export const numberToWords = (num: number, lang?: string): string => {
 
 export const formatSalaryMonth = (monthKey: string | undefined | null, lang: string = 'en'): string => {
   if (!monthKey) return '-';
-  const parts = monthKey.split('-');
-  if (parts.length !== 2) return monthKey;
+  const cleanKey = String(monthKey).trim().replace(/^(\d{4})-(\d{1,2}).*$/, '$1-$2');
+  const parts = cleanKey.split('-');
+  if (parts.length < 2) return monthKey;
   const year = parts[0];
   const monthIdx = parseInt(parts[1], 10) - 1;
-  const monthsEng = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthsEngFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const monthsGuj = ['જાન્યુઆરી', 'ફેબ્રુઆરી', 'માર્ચ', 'એપ્રિલ', 'મે', 'જૂન', 'જુલાઈ', 'ઓગસ્ટ', 'સપ્ટેમ્બર', 'ઓક્ટોબર', 'નવેમ્બર', 'ડિસેમ્બર'];
   if (isNaN(monthIdx) || monthIdx < 0 || monthIdx > 11) return monthKey;
   if (lang === 'gu') {
     return `${monthsGuj[monthIdx]} ${year}`;
   }
-  return `${monthsEng[monthIdx]} ${year}`;
+  return `${monthsEngFull[monthIdx]} ${year}`;
 };
 
 export const translateRole = (role: string | undefined | null, lang: string = 'en'): string => {
@@ -84,4 +86,16 @@ export const translateStatus = (status: string | undefined | null, lang: string 
     'Working': 'ચાલુ (Working)',
   };
   return statusMap[status] || status;
+};
+
+export const ensureIsoDate = (val: any): string => {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().split('T')[0];
+  }
+  return s;
 };

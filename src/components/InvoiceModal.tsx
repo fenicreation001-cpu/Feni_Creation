@@ -1,3 +1,10 @@
+import {
+  Print as PrintIcon,
+  PictureAsPdf as PdfIcon,
+  Close as CloseIcon,
+  WhatsApp as WhatsAppIcon,
+  Receipt as ReceiptIcon,
+} from '@mui/icons-material';
 import React, { useRef, useState } from 'react';
 import {
   Dialog,
@@ -9,11 +16,11 @@ import {
   Typography,
   IconButton,
 } from '@mui/material';
-import PrintIcon from '@mui/icons-material/Print';
-import PdfIcon from '@mui/icons-material/PictureAsPdf';
-import CloseIcon from '@mui/icons-material/Close';
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import ReceiptIcon from '@mui/icons-material/Receipt';
+
+
+
+
+
 import { Bill, CompanySettings } from '../types';
 import { formatDate, numberToWords } from '../utils/formatters';
 import { getBillCalculatedTotals } from '../utils/billCalculations';
@@ -252,7 +259,7 @@ const SingleBillInvoiceRender: React.FC<SingleBillInvoiceRenderProps> = ({
                             <td style={{ fontWeight: 'bold', verticalAlign: 'top', lineHeight: '17px' }}>Party Ch. Date</td>
                             <td style={{ textAlign: 'right', verticalAlign: 'top', lineHeight: '17px' }}>{formatDate(bill.dueDate || bill.date)}</td>
                           </tr>
-                          {(bill.deliveryDate || items[0]?.deliveryDate) && (
+                          {!bill.isWorking && (bill.deliveryDate || items[0]?.deliveryDate) && (
                             <tr>
                               <td style={{ fontWeight: 'bold', verticalAlign: 'top', lineHeight: '17px' }}>Delivery Date</td>
                               <td style={{ textAlign: 'right', verticalAlign: 'top', lineHeight: '17px' }}>{formatDate(bill.deliveryDate || items[0]?.deliveryDate)}</td>
@@ -1085,7 +1092,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               fontWeight: 700,
               borderRadius: 2,
               px: 2.5,
-              background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
             }}
           >
             {isMultiple ? `Print (${targetBills.length})` : 'Print Invoice'}
@@ -1095,7 +1102,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             variant="contained"
             startIcon={<PdfIcon />}
             onClick={handleDownloadPdf}
-            sx={{ fontWeight: 700, borderRadius: 2, bgcolor: '#0f172a', '&:hover': { bgcolor: '#1e293b' } }}
+            sx={{ fontWeight: 700, borderRadius: 2, bgcolor: '#1e3a8a', '&:hover': { bgcolor: '#1e40af' } }}
           >
             {isMultiple ? `PDF (${targetBills.length})` : 'Download PDF'}
           </Button>
@@ -1123,10 +1130,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             sx={{
               fontWeight: 700,
               borderRadius: 2,
-              color: '#4f46e5',
-              borderColor: '#c7d2fe',
-              bgcolor: '#eef2ff',
-              '&:hover': { bgcolor: '#e0e7ff', borderColor: '#818cf8' },
+              color: '#1d4ed8',
+              borderColor: '#cbd5e1',
+              bgcolor: '#ffffff',
+              '&:hover': { bgcolor: '#f8fafc', borderColor: '#2563eb' },
             }}
           >
             {isMultiple ? `Details PDF (${targetBills.length})` : 'Bill Details PDF'}
@@ -1191,7 +1198,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </div>
 
         {/* Hidden Details PDF Export Container */}
-        <div style={{ position: 'absolute', top: 0, left: '-9999px', width: '760px', backgroundColor: '#ffffff', opacity: 1, pointerEvents: 'none', zIndex: -1000 }} ref={detailsRef}>
+        <div style={{ position: 'fixed', top: 0, left: '-9999px', width: '760px', backgroundColor: '#ffffff', opacity: 0, pointerEvents: 'none', zIndex: -1000, height: 0, overflow: 'hidden' }} ref={detailsRef}>
           {targetBills.map((currentBill, billIndex) => (
             <BillDetailsPdfTemplate
               key={`details-${currentBill.id || billIndex}`}

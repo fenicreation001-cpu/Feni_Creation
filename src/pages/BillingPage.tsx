@@ -1,4 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  Print as PrintIcon,
+  Visibility as ViewIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Close as CloseIcon,
+  Share as ShareIcon,
+  WhatsApp as WhatsAppIcon,
+  ContentCopy as CopyIcon,
+  ArrowBack as ArrowBackIcon,
+  Description as ChallanIcon,
+  ReceiptLong as InvoiceIcon,
+  AccountBalanceWallet as BillingIcon,
+  LocalOffer as DiscountIcon,
+  CurrencyRupee as AmountIcon,
+  HourglassEmpty as PendingIcon,
+  CheckCircle as ReceivedIcon,
+  Receipt as ReceiptIcon,
+  Person as PersonIcon,
+  CalendarToday as CalendarIcon,
+  PictureAsPdf as PdfIcon,
+  ViewAgenda as GroupedIcon,
+  TableRows as TableIcon,
+  KeyboardArrowDown as ExpandMoreIcon,
+  KeyboardArrowUp as ExpandLessIcon,
+  ArrowForward as ArrowForwardIcon,
+  RotateLeft as ResetIcon,
+  FileDownload as DownloadIcon,
+} from '@mui/icons-material';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
 import {
   Box,
@@ -36,32 +68,32 @@ import {
   ToggleButtonGroup,
   Collapse,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import PrintIcon from '@mui/icons-material/Print';
-import ViewIcon from '@mui/icons-material/Visibility';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CloseIcon from '@mui/icons-material/Close';
-import ShareIcon from '@mui/icons-material/Share';
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import CopyIcon from '@mui/icons-material/ContentCopy';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ChallanIcon from '@mui/icons-material/Description';
-import InvoiceIcon from '@mui/icons-material/ReceiptLong';
-import BillingIcon from '@mui/icons-material/AccountBalanceWallet';
-import DiscountIcon from '@mui/icons-material/LocalOffer';
-import AmountIcon from '@mui/icons-material/CurrencyRupee';
-import PendingIcon from '@mui/icons-material/HourglassEmpty';
-import ReceivedIcon from '@mui/icons-material/CheckCircle';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import PersonIcon from '@mui/icons-material/Person';
-import CalendarIcon from '@mui/icons-material/CalendarToday';
-import PdfIcon from '@mui/icons-material/PictureAsPdf';
-import GroupedIcon from '@mui/icons-material/ViewAgenda';
-import TableIcon from '@mui/icons-material/TableRows';
-import ExpandMoreIcon from '@mui/icons-material/KeyboardArrowDown';
-import ExpandLessIcon from '@mui/icons-material/KeyboardArrowUp';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Bill, BillItem, Party, CompanySettings } from '../types';
 import { formatRupees, formatDate, numberToWords } from '../utils/formatters';
 import { BillDetailsPdfTemplate } from '../components/BillDetailsPdfTemplate';
@@ -71,9 +103,11 @@ import { InvoiceModal } from '../components/InvoiceModal';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { useNotification } from '../context/NotificationContext';
 import { useThemeContext } from '../context/ThemeContext';
-import { useMonthFilter } from '../context/MonthFilterContext';
+import { useMonthFilter, extractYearMonth } from '../context/MonthFilterContext';
 import { useCompany } from '../context/CompanyContext';
+import { MonthMultiSelectDropdown } from '../components/MonthMultiSelectDropdown';
 import { getBillCalculatedTotals, getBillPendingAmount } from '../utils/billCalculations';
+import { BillingStatementModal } from '../components/BillingStatementModal';
 
 export { getBillCalculatedTotals, getBillPendingAmount };
 
@@ -136,18 +170,30 @@ const formatMonthYearLabel = (monthKey: string, lang: string) => {
 };
 
 export const BillingPage: React.FC = () => {
-  const { selectedMonth, setSelectedMonth, isDateInSelectedMonth, getMonthLabel } = useMonthFilter();
+  const navigate = useNavigate();
+  const {
+    selectedMonth,
+    setSelectedMonth,
+    selectedMonths,
+    setSelectedMonths,
+    toggleMonth,
+    isDateInSelectedMonth,
+    getMonthLabel,
+    getMultiMonthLabel,
+  } = useMonthFilter();
   const [bills, setBills] = useState<Bill[]>([]);
   const [parties, setParties] = useState<Party[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [partyFilter, setPartyFilter] = useState<string>('All');
+  const [statementModalOpen, setStatementModalOpen] = useState(false);
   const monthFilter = selectedMonth;
   const setMonthFilter = setSelectedMonth;
   
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   type SortField =
     | 'default'
@@ -231,9 +277,9 @@ export const BillingPage: React.FC = () => {
       const opt = {
         margin: [4, 4, 4, 4] as [number, number, number, number],
         filename: `Invoice_Bill_Details_${billToView.invoiceNo || 'FC'}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.65 },
+        image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: {
-          scale: 1.5,
+          scale: 2,
           useCORS: true,
           allowTaint: true,
           letterRendering: true,
@@ -241,7 +287,6 @@ export const BillingPage: React.FC = () => {
           backgroundColor: '#ffffff',
           scrollX: 0,
           scrollY: 0,
-          dpi: 120,
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const, compress: true },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
@@ -372,7 +417,7 @@ export const BillingPage: React.FC = () => {
     partyContactPerson: '',
     date: new Date().toISOString().split('T')[0],
     dueDate: new Date().toISOString().split('T')[0],
-    deliveryDate: new Date().toISOString().split('T')[0],
+    deliveryDate: '',
     paidAmount: '',
     notes: '',
     chargeAmount: '',
@@ -486,7 +531,7 @@ export const BillingPage: React.FC = () => {
       partyGstin: '',
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date().toISOString().split('T')[0],
-      deliveryDate: new Date().toISOString().split('T')[0],
+      deliveryDate: '',
       paidAmount: '',
       notes: '',
       chargeAmount: '',
@@ -503,7 +548,7 @@ export const BillingPage: React.FC = () => {
         {
           id: 'i_' + Date.now(),
           challanDate: new Date().toISOString().split('T')[0],
-          deliveryDate: new Date().toISOString().split('T')[0],
+          deliveryDate: '',
           challanNo: '',
           designNo: '',
           description: '',
@@ -543,7 +588,8 @@ export const BillingPage: React.FC = () => {
     }
     const safeBillDate = ensureIsoDate(bill.date);
     const safeDueDate = ensureIsoDate(bill.dueDate || bill.date);
-    const safeDeliveryDate = ensureIsoDate(bill.deliveryDate || bill.dueDate || bill.date);
+    const isBillWrk = Boolean(bill.isWorking || !bill.invoiceNo || bill.invoiceNo === '-' || bill.invoiceNo === 'Working');
+    const safeDeliveryDate = (isBillWrk || !bill.deliveryDate) ? '' : ensureIsoDate(bill.deliveryDate);
 
     const grossTot = (bill.items || []).reduce((sum, item) => {
       const lot = Number(item.quantity) || 0;
@@ -586,7 +632,7 @@ export const BillingPage: React.FC = () => {
           ? bill.items.map((i) => ({
               ...i,
               challanDate: ensureIsoDate(i.challanDate || safeDueDate || safeBillDate),
-              deliveryDate: ensureIsoDate(i.deliveryDate || safeDeliveryDate || i.challanDate || safeDueDate || safeBillDate),
+              deliveryDate: (isBillWrk || !i.deliveryDate) ? safeDeliveryDate : ensureIsoDate(i.deliveryDate),
               challanNo: i.challanNo || bill.challanNo || '',
               designNo: i.designNo || '',
               plain: i.plain ?? ('' as any),
@@ -598,7 +644,7 @@ export const BillingPage: React.FC = () => {
               {
                 id: 'i_1',
                 challanDate: safeDueDate || safeBillDate,
-                deliveryDate: safeDeliveryDate || safeDueDate || safeBillDate,
+                deliveryDate: safeDeliveryDate,
                 challanNo: bill.challanNo || '',
                 designNo: '',
                 description: '',
@@ -809,7 +855,7 @@ export const BillingPage: React.FC = () => {
 
     const safeDate = ensureIsoDate(formData.date);
     const safeDueDate = ensureIsoDate(formData.dueDate || formData.date);
-    const safeDeliveryDate = ensureIsoDate(formData.deliveryDate || safeDueDate || safeDate);
+    const safeDeliveryDate = isWorking ? '' : (formData.deliveryDate ? ensureIsoDate(formData.deliveryDate) : '');
     const safePaymentDate = ensureIsoDate(formData.paymentDate || formData.date);
     const safeChequeDate = ensureIsoDate(formData.chequeDate || formData.date);
 
@@ -852,7 +898,7 @@ export const BillingPage: React.FC = () => {
       items: formData.items.map((i, idx) => ({
         ...i,
         challanDate: ensureIsoDate(i.challanDate || safeDueDate || safeDate),
-        deliveryDate: ensureIsoDate(i.deliveryDate || safeDeliveryDate || i.challanDate || safeDueDate || safeDate),
+        deliveryDate: isWorking ? '' : (i.deliveryDate ? ensureIsoDate(i.deliveryDate) : safeDeliveryDate),
         challanNo: i.challanNo || (idx === 0 ? formData.challanNo : ''),
         description: i.description || 'Embroidery Work',
         quantity: Number(i.quantity) || 1,
@@ -958,13 +1004,35 @@ export const BillingPage: React.FC = () => {
     ])
   ).sort();
 
+  const monthRecordCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    bills.forEach((b) => {
+      const distinctMonthsForBill = new Set<string>();
+      const d1 = extractYearMonth(b.date);
+      if (d1) distinctMonthsForBill.add(d1);
+      const d2 = extractYearMonth(b.invoiceDate);
+      if (d2) distinctMonthsForBill.add(d2);
+      const d3 = extractYearMonth(b.createdAt);
+      if (d3) distinctMonthsForBill.add(d3);
+      if (b.items && Array.isArray(b.items)) {
+        b.items.forEach((item) => {
+          const dItem = extractYearMonth(item.challanDate);
+          if (dItem) distinctMonthsForBill.add(dItem);
+        });
+      }
+      distinctMonthsForBill.forEach((ym) => {
+        counts[ym] = (counts[ym] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [bills]);
+
   const monthKeysSet = new Set<string>();
   bills.forEach((b) => {
-    if (b.date && b.date.length >= 7) {
-      const ym = b.date.substring(0, 7);
-      if (/^\d{4}-\d{2}$/.test(ym)) {
-        monthKeysSet.add(ym);
-      }
+    const d = b.date || b.invoiceDate || (b.items && b.items[0]?.challanDate) || b.createdAt;
+    if (d) {
+      const ym = extractYearMonth(d);
+      if (ym) monthKeysSet.add(ym);
     }
   });
   const uniqueMonths = Array.from(monthKeysSet).sort().reverse();
@@ -999,7 +1067,19 @@ export const BillingPage: React.FC = () => {
           : paid <= 0 && pend > 0);
       const matchesParty =
         partyFilter === 'All' || b.partyName === partyFilter;
-      const matchesMonth = isDateInSelectedMonth(b.date || b.createdAt);
+      
+      const isMonthMatch = () => {
+        if ((!monthFilter || monthFilter === 'ALL' || monthFilter === 'All') && selectedMonths.length === 0) {
+          return true;
+        }
+        const effectiveBillDate =
+          b.date ||
+          b.invoiceDate ||
+          (b.items && Array.isArray(b.items) && b.items.find((item) => item.challanDate)?.challanDate) ||
+          b.createdAt;
+        return Boolean(effectiveBillDate && isDateInSelectedMonth(effectiveBillDate));
+      };
+      const matchesMonth = isMonthMatch();
 
       return matchesSearch && matchesStatus && matchesParty && matchesMonth;
     })
@@ -1101,9 +1181,10 @@ export const BillingPage: React.FC = () => {
       const working = isBillWorking(bill);
       const invNo = working ? 'Working' : (bill.invoiceNo || 'No Invoice').trim();
       const pName = (bill.partyName || 'Unknown Party').trim();
+      const ym = extractYearMonth(bill.date || (bill.items && bill.items[0]?.challanDate) || '') || 'All';
       const groupKey = working
         ? `working___${pName}___${bill.id}`
-        : `${invNo.toLowerCase()}___${pName.toLowerCase()}`;
+        : `${invNo.toLowerCase()}___${pName.toLowerCase()}___${ym}`;
 
       const calc = getBillCalculatedTotals(bill);
       const pending = getBillPendingAmount(bill);
@@ -1282,7 +1363,12 @@ export const BillingPage: React.FC = () => {
                     const val = e.target.checked;
                     setIsWorking(val);
                     if (val) {
-                      setFormData((prev) => ({ ...prev, invoiceNo: '' }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        invoiceNo: '',
+                        deliveryDate: '',
+                        items: prev.items.map((it) => ({ ...it, deliveryDate: '' })),
+                      }));
                     }
                   }}
                   color="warning"
@@ -1505,25 +1591,40 @@ export const BillingPage: React.FC = () => {
                 InputLabelProps={{ shrink: true }}
               />
 
-              <TextField
-                fullWidth
-                type="date"
-                label="Delivery Date (ડિલિવરી તારીખ)"
-                value={ensureIsoDate(formData.deliveryDate || formData.dueDate)}
-                onChange={(e) => {
-                  const newDelDate = ensureIsoDate(e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    deliveryDate: newDelDate,
-                    items: prev.items.map((it) => (
-                      !it.deliveryDate || it.deliveryDate === prev.deliveryDate || it.deliveryDate === prev.dueDate
-                        ? { ...it, deliveryDate: newDelDate }
-                        : it
-                    )),
-                  }));
-                }}
-                InputLabelProps={{ shrink: true }}
-              />
+              {isWorking ? (
+                <TextField
+                  fullWidth
+                  disabled
+                  label="Delivery Date (ડિલિવરી તારીખ)"
+                  value={language === 'gu' ? 'વર્કિંગ (ડિલિવરી તારીખ ઉમેરાશે નહીં)' : 'Working (No Delivery Date)'}
+                  InputProps={{
+                    startAdornment: (
+                      <Chip label="Working" size="small" color="warning" sx={{ mr: 1, fontWeight: 800, height: 22 }} />
+                    ),
+                  }}
+                  helperText={language === 'gu' ? 'વર્કિંગ સ્વિચ ચાલુ છે - ડિલિવરી તારીખ ઉમેરાશે નહીં' : 'Working switch is ON — Delivery Date is omitted'}
+                />
+              ) : (
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Delivery Date (ડિલિવરી તારીખ)"
+                  value={formData.deliveryDate || ''}
+                  onChange={(e) => {
+                    const newDelDate = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      deliveryDate: newDelDate,
+                      items: prev.items.map((it) => (
+                        !it.deliveryDate || it.deliveryDate === prev.deliveryDate
+                          ? { ...it, deliveryDate: newDelDate }
+                          : it
+                      )),
+                    }));
+                  }}
+                  InputLabelProps={{ shrink: true }}
+                />
+              )}
             </Box>
 
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mt: 3, mb: 1.5, gap: 0.5 }}>
@@ -1552,9 +1653,10 @@ export const BillingPage: React.FC = () => {
                     fullWidth
                     size="small"
                     type="date"
+                    disabled={isWorking}
                     label="Delivery Date (ડિલિવરી તા.)"
-                    value={ensureIsoDate(item.deliveryDate || formData.deliveryDate || item.challanDate)}
-                    onChange={(e) => handleItemChange(idx, 'deliveryDate', ensureIsoDate(e.target.value))}
+                    value={isWorking ? '' : (item.deliveryDate || formData.deliveryDate || '')}
+                    onChange={(e) => handleItemChange(idx, 'deliveryDate', e.target.value)}
                     InputLabelProps={{ shrink: true }}
                   />
                   <TextField
@@ -1941,338 +2043,695 @@ export const BillingPage: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 1.5, sm: 0 }, mb: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 1.5, sm: 0 }, mb: 2.5 }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              letterSpacing: '-0.02em',
+              fontSize: '1.42rem',
+            }}
+          >
             {language === 'gu' ? 'બિલિંગ મેનેજમેન્ટ' : 'Billing Management'}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: mode === 'dark' ? '#94a3b8' : '#64748b', fontSize: '0.86rem', mt: 0.2 }}>
             {language === 'gu' ? 'ઇનવોઇસ બનાવો, જીએસટી ગણતરી (2.5% CGST + 2.5% SGST) અને પીડીએફ પ્રિન્ટ કરો' : 'Create bills, auto GST calculation (5%), print invoices & download PDF'}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreateForm}
-          sx={{ py: 1.2, px: 3, fontWeight: 700, width: { xs: '100%', sm: 'auto' } }}
-        >
-          {language === 'gu' ? '+ નવું બિલ બનાવો' : '+ Create New Bill'}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowForwardIcon sx={{ fontSize: 17 }} />}
+            onClick={() => navigate('/payments')}
+            sx={{
+              py: 0.8,
+              px: 2,
+              fontWeight: 600,
+              fontSize: '0.84rem',
+              borderRadius: '8px',
+              textTransform: 'none',
+              bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              borderColor: mode === 'dark' ? '#1e293b' : '#e2e8f0',
+              '&:hover': {
+                borderColor: '#2563eb',
+                bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(37, 99, 235, 0.05)',
+              },
+            }}
+          >
+            {language === 'gu' ? 'ચુકવણી મેનેજમેન્ટ' : 'Payment Management'}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PdfIcon sx={{ fontSize: 18 }} />}
+            onClick={() => setStatementModalOpen(true)}
+            sx={{
+              py: 0.8,
+              px: 2,
+              fontWeight: 600,
+              fontSize: '0.84rem',
+              borderRadius: '8px',
+              textTransform: 'none',
+              bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              borderColor: mode === 'dark' ? '#1e293b' : '#e2e8f0',
+              '&:hover': {
+                borderColor: '#2563eb',
+                bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(37, 99, 235, 0.05)',
+              },
+            }}
+          >
+            {language === 'gu' ? 'PDF સ્ટેટમેન્ટ' : 'PDF Statement'}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon sx={{ fontSize: 18 }} />}
+            onClick={handlePrintSelectedBills}
+            sx={{
+              py: 0.8,
+              px: 2,
+              fontWeight: 600,
+              fontSize: '0.84rem',
+              borderRadius: '8px',
+              textTransform: 'none',
+              bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              borderColor: mode === 'dark' ? '#1e293b' : '#e2e8f0',
+              '&:hover': {
+                borderColor: '#2563eb',
+                bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(37, 99, 235, 0.05)',
+              },
+            }}
+          >
+            {language === 'gu' ? 'PDF એક્સપોર્ટ' : 'Export PDF'}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+            onClick={handleOpenCreateForm}
+            sx={{
+              py: 0.8,
+              px: 2.2,
+              fontWeight: 600,
+              fontSize: '0.86rem',
+              borderRadius: '8px',
+              bgcolor: '#1d4ed8',
+              color: '#ffffff',
+              textTransform: 'none',
+              boxShadow: '0 2px 6px rgba(29, 78, 216, 0.35)',
+              '&:hover': {
+                bgcolor: '#1e40af',
+                boxShadow: '0 4px 12px rgba(29, 78, 216, 0.45)',
+              },
+            }}
+          >
+            {language === 'gu' ? '+ નવું બિલ બનાવો' : '+ Create New Bill'}
+          </Button>
+        </Box>
       </Box>
 
-      {/* Summary Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)', lg: 'repeat(7, 1fr)' }, gap: 1.5, mb: 3.5 }}>
-        {/* Card 1: Total Challan */}
-        <Card
-          elevation={0}
+      {/* 7 Small Metric Cards in Exact Requested Sequence (Small Box design) */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'repeat(2, 1fr)',
+            sm: 'repeat(3, 1fr)',
+            md: 'repeat(4, 1fr)',
+            lg: 'repeat(7, 1fr)',
+          },
+          gap: 1.25,
+          mb: 2,
+        }}
+      >
+        {/* Card 1: TOTAL CHALLAN */}
+        <Box
           sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(45, 212, 191, 0.3)' : '#ccfbf1'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
+            py: 1.2,
+            px: 1.35,
+            borderRadius: '10px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.25)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '74px',
+            transition: 'all 0.15s ease-in-out',
             '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(45, 212, 191, 0.2)' : '0 4px 12px rgba(13, 148, 136, 0.1)',
-              transform: 'translateY(-2px)',
+              borderColor: '#2563eb',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.08)',
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography
               sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(45, 212, 191, 0.15)' : '#ccfbf1',
-                color: mode === 'dark' ? '#2dd4bf' : '#0d9488',
-                borderRadius: '10px',
+                fontSize: '0.67rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
-              <ChallanIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#5eead4' : '#0f766e', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ ચલાણ' : 'TOTAL CHALLAN'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#2dd4bf' : '#0d9488', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {summaryTotals.totalChallanCount} {language === 'gu' ? 'ચલાણ' : summaryTotals.totalChallanCount === 1 ? 'Challan' : 'Challans'}
-              </Typography>
-            </Box>
+              {language === 'gu' ? 'કુલ ચલાણ' : 'TOTAL CHALLAN'}
+            </Typography>
+            <ChallanIcon sx={{ fontSize: 16, color: '#2563eb', flexShrink: 0 }} />
           </Box>
-        </Card>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.05rem', sm: '1.15rem', xl: '1.25rem' },
+              fontWeight: 800,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              lineHeight: 1.15,
+              my: 0.25,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {summaryTotals.totalChallanCount.toLocaleString('en-IN')}
+          </Typography>
+          <Typography sx={{ fontSize: '0.67rem', color: mode === 'dark' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>
+            {language === 'gu' ? 'ડિલિવરી ચલાણ' : 'Challans'}
+          </Typography>
+        </Box>
 
-        {/* Card 2: Total Invoices */}
-        <Card
-          elevation={0}
+        {/* Card 2: TOTAL INVOICE */}
+        <Box
           sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(56, 189, 248, 0.3)' : '#bae6fd'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
+            py: 1.2,
+            px: 1.35,
+            borderRadius: '10px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.25)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '74px',
+            transition: 'all 0.15s ease-in-out',
             '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(56, 189, 248, 0.2)' : '0 4px 12px rgba(2, 132, 199, 0.1)',
-              transform: 'translateY(-2px)',
+              borderColor: '#2563eb',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.08)',
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography
+              sx={{
+                fontSize: '0.67rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {language === 'gu' ? 'કુલ ઇનવોઇસ' : 'TOTAL INVOICE'}
+            </Typography>
+            <InvoiceIcon sx={{ fontSize: 16, color: '#3b82f6', flexShrink: 0 }} />
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, my: 0.25 }}>
+            <Typography
+              sx={{
+                fontSize: { xs: '1.05rem', sm: '1.15rem', xl: '1.25rem' },
+                fontWeight: 800,
+                color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+                lineHeight: 1.15,
+                letterSpacing: '-0.02em',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {summaryTotals.finalizedInvoiceCount.toLocaleString('en-IN')}
+            </Typography>
+            {summaryTotals.workingCount > 0 && (
+              <Typography
+                component="span"
+                sx={{
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  color: mode === 'dark' ? '#fbbf24' : '#b45309',
+                  bgcolor: mode === 'dark' ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7',
+                  px: 0.5,
+                  py: 0.1,
+                  borderRadius: '4px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                +{summaryTotals.workingCount}
+              </Typography>
+            )}
+          </Box>
+          <Typography sx={{ fontSize: '0.67rem', color: mode === 'dark' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>
+            {language === 'gu' ? 'પાકા બિલ' : 'Bills'}
+          </Typography>
+        </Box>
+
+        {/* Card 3: TOTAL BILLING (Hero Deep Navy Card) */}
+        <Box
+          sx={{
+            py: 1.2,
+            px: 1.35,
+            borderRadius: '10px',
+            bgcolor: '#1e3a8a',
+            border: '1px solid #2563eb',
+            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.22)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '74px',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography
+              sx={{
+                fontSize: '0.67rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                color: '#bfdbfe',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {language === 'gu' ? 'કુલ બિલિંગ' : 'TOTAL BILLING'}
+            </Typography>
+            <InvoiceIcon sx={{ fontSize: 16, color: '#60a5fa', flexShrink: 0 }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.05rem', sm: '1.15rem', xl: '1.25rem' },
+              fontWeight: 800,
+              color: '#ffffff',
+              lineHeight: 1.15,
+              my: 0.25,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {formatRupees(summaryTotals.totalBillingAmount)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.67rem', color: '#93c5fd', whiteSpace: 'nowrap' }}>
+            {language === 'gu' ? 'ગ્રોસ મૂલ્ય' : 'Gross Value'}
+          </Typography>
+        </Box>
+
+        {/* Card 4: TOTAL DISCOUNT */}
+        <Box
+          sx={{
+            py: 1.2,
+            px: 1.35,
+            borderRadius: '10px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.25)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '74px',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              borderColor: '#2563eb',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.08)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography
+              sx={{
+                fontSize: '0.67rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {language === 'gu' ? 'કુલ વટાવ' : 'TOTAL DISCOUNT'}
+            </Typography>
+            <DiscountIcon sx={{ fontSize: 16, color: '#2563eb', flexShrink: 0 }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.05rem', sm: '1.15rem', xl: '1.25rem' },
+              fontWeight: 800,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              lineHeight: 1.15,
+              my: 0.25,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {formatRupees(summaryTotals.totalDiscount)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.67rem', color: mode === 'dark' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>
+            {language === 'gu' ? 'આપેલ વટાવ' : 'Discount'}
+          </Typography>
+        </Box>
+
+        {/* Card 5: TOTAL AMOUNT */}
+        <Box
+          sx={{
+            py: 1.2,
+            px: 1.35,
+            borderRadius: '10px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.25)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '74px',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              borderColor: '#0284c7',
+              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.08)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography
+              sx={{
+                fontSize: '0.67rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {language === 'gu' ? 'કુલ રકમ' : 'TOTAL AMOUNT'}
+            </Typography>
+            <AmountIcon sx={{ fontSize: 16, color: '#0284c7', flexShrink: 0 }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.05rem', sm: '1.15rem', xl: '1.25rem' },
+              fontWeight: 800,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              lineHeight: 1.15,
+              my: 0.25,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {formatRupees(summaryTotals.totalAmount)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.67rem', color: mode === 'dark' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>
+            {language === 'gu' ? 'નેટ રકમ' : 'Net Amount'}
+          </Typography>
+        </Box>
+
+        {/* Card 6: TOTAL PENDING */}
+        <Box
+          sx={{
+            py: 1.2,
+            px: 1.35,
+            borderRadius: '10px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.25)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '74px',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              borderColor: '#f59e0b',
+              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.12)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography
+              sx={{
+                fontSize: '0.67rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {language === 'gu' ? 'બાકી રકમ' : 'TOTAL PENDING'}
+            </Typography>
+            <PendingIcon sx={{ fontSize: 16, color: '#f59e0b', flexShrink: 0 }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.05rem', sm: '1.15rem', xl: '1.25rem' },
+              fontWeight: 800,
+              color: summaryTotals.pendingAmount > 0 ? (mode === 'dark' ? '#fbbf24' : '#d97706') : (mode === 'dark' ? '#f8fafc' : '#0f172a'),
+              lineHeight: 1.15,
+              my: 0.25,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {formatRupees(summaryTotals.pendingAmount)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.67rem', color: mode === 'dark' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>
+            {language === 'gu' ? 'બાકી બેલેન્સ' : 'Pending'}
+          </Typography>
+        </Box>
+
+        {/* Card 7: TOTAL RECEIVED */}
+        <Box
+          sx={{
+            py: 1.2,
+            px: 1.35,
+            borderRadius: '10px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.25)' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '74px',
+            transition: 'all 0.15s ease-in-out',
+            cursor: 'pointer',
+            '&:hover': {
+              borderColor: '#10b981',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.12)',
+            },
+          }}
+          onClick={() => navigate('/payments')}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+            <Typography
+              sx={{
+                fontSize: '0.67rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {language === 'gu' ? 'કુલ મળેલ રકમ' : 'TOTAL RECEIVED'}
+            </Typography>
+            <ReceivedIcon sx={{ fontSize: 16, color: '#10b981', flexShrink: 0 }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.05rem', sm: '1.15rem', xl: '1.25rem' },
+              fontWeight: 800,
+              color: '#10b981',
+              lineHeight: 1.15,
+              my: 0.25,
+              letterSpacing: '-0.02em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {formatRupees(summaryTotals.receivedAmount)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.67rem', color: mode === 'dark' ? '#94a3b8' : '#64748b', whiteSpace: 'nowrap' }}>
+            {language === 'gu' ? 'જમા થયેલ' : 'Received'}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Search & Filter Controls */}
+      <Card
+        elevation={0}
+        sx={{
+          p: 2,
+          px: 2.5,
+          mb: 2.5,
+          borderRadius: '14px',
+          bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+          border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+        }}
+      >
+        {/* Top Header: Billing Records Title + Count Badge INLINE with proper spacing */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1.5,
+            mb: 2,
+            pb: 1.5,
+            borderBottom: `1px solid ${mode === 'dark' ? '#1e293b' : '#f1f5f9'}`,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
               sx={{
                 width: 36,
                 height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.15)' : '#e0f2fe',
-                color: mode === 'dark' ? '#38bdf8' : '#0284c7',
                 borderRadius: '10px',
+                bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: mode === 'dark' ? '#60a5fa' : '#2563eb',
               }}
             >
               <InvoiceIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#7dd3fc' : '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ ઇનવોઇસ' : 'TOTAL INVOICES'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#38bdf8' : '#0284c7', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {summaryTotals.finalizedInvoiceCount} {language === 'gu' ? 'ઇનવોઇસ' : summaryTotals.finalizedInvoiceCount === 1 ? 'Invoice' : 'Invoices'}
-              </Typography>
-              {summaryTotals.workingCount > 0 && (
-                <Typography variant="caption" sx={{ color: mode === 'dark' ? '#94a3b8' : '#64748b', fontSize: '0.65rem', display: 'block', fontWeight: 600, mt: 0.25 }}>
-                  ({summaryTotals.workingCount} {language === 'gu' ? 'વર્કિંગ સહિત' : 'Working Included'})
-                </Typography>
-              )}
             </Box>
-          </Box>
-        </Card>
-
-        {/* Card 3: Total Billing */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(192, 132, 252, 0.3)' : '#e9d5ff'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(192, 132, 252, 0.2)' : '0 4px 12px rgba(147, 51, 234, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
+            <Typography
               sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(192, 132, 252, 0.15)' : '#f3e8ff',
-                color: mode === 'dark' ? '#c084fc' : '#9333ea',
-                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: { xs: '1.05rem', sm: '1.15rem' },
+                color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+                letterSpacing: '-0.01em',
               }}
             >
-              <BillingIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#c084fc' : '#7e22ce', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ બિલિંગ' : 'TOTAL BILLING'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#c084fc' : '#9333ea', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.totalBillingAmount)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Card 4: Total Discount */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(251, 146, 60, 0.3)' : '#fed7aa'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(251, 146, 60, 0.2)' : '0 4px 12px rgba(234, 88, 12, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
+              {language === 'gu' ? 'બિલિંગ રેકોર્ડ્સ' : 'Billing records'}
+            </Typography>
+            <Box
               sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(251, 146, 60, 0.15)' : '#fff7ed',
-                color: mode === 'dark' ? '#fb923c' : '#ea580c',
-                borderRadius: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff',
+                color: mode === 'dark' ? '#60a5fa' : '#2563eb',
+                border: `1px solid ${mode === 'dark' ? '#1e40af' : '#bfdbfe'}`,
+                px: 1.25,
+                py: 0.35,
+                borderRadius: '8px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
               }}
             >
-              <DiscountIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#fdba74' : '#c2410c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ વટાવ' : 'TOTAL DISCOUNT'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#fb923c' : '#ea580c', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.totalDiscount)}
-              </Typography>
+              {filteredBills.length} {language === 'gu' ? 'રેકોર્ડ્સ' : filteredBills.length === 1 ? 'record' : 'records'}
             </Box>
           </Box>
-        </Card>
+        </Box>
 
-        {/* Card 5: Total Amount */}
-        <Card
-          elevation={0}
+        {/* Filter Controls Bar with Proper Spacing */}
+        <Box
           sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(129, 140, 248, 0.3)' : '#c7d2fe'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(129, 140, 248, 0.2)' : '0 4px 12px rgba(79, 70, 229, 0.1)',
-              transform: 'translateY(-2px)',
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'minmax(200px, 2.2fr) minmax(180px, 1.8fr) minmax(160px, 1.4fr) minmax(140px, 1.2fr) auto',
             },
+            gap: 2,
+            alignItems: 'flex-end',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(129, 140, 248, 0.15)' : '#eef2ff',
-                color: mode === 'dark' ? '#818cf8' : '#4f46e5',
-                borderRadius: '10px',
-              }}
-            >
-              <AmountIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#a5b4fc' : '#4338ca', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ રકમ' : 'TOTAL AMOUNT'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#818cf8' : '#4f46e5', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.totalAmount)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Card 6: Total Pending */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(248, 113, 113, 0.3)' : '#fecdd3'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(248, 113, 113, 0.2)' : '0 4px 12px rgba(225, 29, 72, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(248, 113, 113, 0.15)' : '#fff1f2',
-                color: mode === 'dark' ? '#f87171' : '#dc2626',
-                borderRadius: '10px',
-              }}
-            >
-              <PendingIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#fca5a5' : '#b91c1c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'બાકી રકમ' : 'TOTAL PENDING'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#f87171' : '#dc2626', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.pendingAmount)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Card 7: Total Received */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(74, 222, 128, 0.3)' : '#bbf7d0'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(74, 222, 128, 0.2)' : '0 4px 12px rgba(22, 163, 74, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(74, 222, 128, 0.15)' : '#f0fdf4',
-                color: mode === 'dark' ? '#4ade80' : '#16a34a',
-                borderRadius: '10px',
-              }}
-            >
-              <ReceivedIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#86efac' : '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'મળેલ રકમ' : 'TOTAL RECEIVED'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#4ade80' : '#16a34a', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.receivedAmount)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-      </Box>
-
-      <Card sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '2fr 1.5fr 1.5fr' }, gap: 2, flex: 1, width: '100%' }}>
+          {/* Search billing records */}
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: mode === 'dark' ? '#94a3b8' : '#64748b', mb: 0.6 }}>
+              {language === 'gu' ? 'બિલિંગ રેકોર્ડ શોધો' : 'Search billing records'}
+            </Typography>
             <TextField
               fullWidth
               size="small"
-              placeholder={language === 'gu' ? 'બિલ નંબર, ઇનવોઇસ નંબર, ચલાણ અથવા પાર્ટીનું નામ શોધો...' : 'Search Paid Bill Number, Invoice No, Challan, or Party Name...'}
+              placeholder={language === 'gu' ? 'બિલ નંબર, ઇનવોઇસ નંબર, ચલાણ અથવા પાર્ટીનું નામ...' : 'Search Bill No., Invoice No., Challan, or Party...'}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon color="action" />
+                    <SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
                   </InputAdornment>
                 ),
+                endAdornment: search ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setSearch('')} sx={{ p: 0.2 }}>
+                      <CloseIcon sx={{ fontSize: 15 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ) : undefined,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  bgcolor: mode === 'dark' ? '#0f172a' : '#ffffff',
+                },
               }}
             />
+          </Box>
 
+          {/* Filter by Month (Multi-Select Popover with Bill Counts) */}
+          <Box>
+            <MonthMultiSelectDropdown
+              label={language === 'gu' ? 'મહિના મુજબ ફિલ્ટર' : 'Filter by Month'}
+              monthRecordCounts={monthRecordCounts}
+              onFilterChange={() => setPage(0)}
+            />
+          </Box>
+
+          {/* Filter by Party */}
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: mode === 'dark' ? '#94a3b8' : '#64748b', mb: 0.6 }}>
+              {language === 'gu' ? 'પાર્ટી મુજબ ફિલ્ટર' : 'Filter by Party'}
+            </Typography>
             <TextField
               select
               fullWidth
               size="small"
-              label={language === 'gu' ? 'પાર્ટી મુજબ ફિલ્ટર' : 'Filter by Party'}
               value={partyFilter}
-              onChange={(e) => setPartyFilter(e.target.value)}
+              onChange={(e) => {
+                setPartyFilter(e.target.value);
+                setPage(0);
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  bgcolor: mode === 'dark' ? '#0f172a' : '#ffffff',
+                },
+              }}
             >
               <MenuItem value="All">{language === 'gu' ? 'બધી પાર્ટીઓ (All Parties)' : 'All Parties'}</MenuItem>
               {allPartyNames.map((pName) => (
@@ -2281,61 +2740,134 @@ export const BillingPage: React.FC = () => {
                 </MenuItem>
               ))}
             </TextField>
+          </Box>
 
+          {/* Payment Status */}
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: mode === 'dark' ? '#94a3b8' : '#64748b', mb: 0.6 }}>
+              {language === 'gu' ? 'પેમેન્ટ સ્થિતિ' : 'Payment Status'}
+            </Typography>
             <TextField
               select
               fullWidth
               size="small"
-              label={language === 'gu' ? 'પેમેન્ટ સ્થિતિ' : 'Payment Status'}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(0);
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  bgcolor: mode === 'dark' ? '#0f172a' : '#ffffff',
+                },
+              }}
             >
-              <MenuItem value="All">{language === 'gu' ? 'બધી સ્થિતિ (All Statuses)' : 'All Statuses'}</MenuItem>
-              <MenuItem value="Paid">{language === 'gu' ? 'પૂર્ણ મળેલ (Received / Paid)' : 'Received / Paid Only'}</MenuItem>
-              <MenuItem value="Partial">{language === 'gu' ? 'અંશતઃ મળેલ (Partial Paid)' : 'Partial Paid Only'}</MenuItem>
-              <MenuItem value="Pending">{language === 'gu' ? 'બાકી (Pending)' : 'Pending Only'}</MenuItem>
+              <MenuItem value="All">{language === 'gu' ? 'બધી સ્થિતિ (All)' : 'All Statuses'}</MenuItem>
+              <MenuItem value="Paid">{language === 'gu' ? 'પૂર્ણ મળેલ (Paid)' : 'Paid'}</MenuItem>
+              <MenuItem value="Partial">{language === 'gu' ? 'અંશતઃ મળેલ (Partial)' : 'Partial'}</MenuItem>
+              <MenuItem value="Pending">{language === 'gu' ? 'બાકી (Pending)' : 'Pending'}</MenuItem>
             </TextField>
+          </Box>
+
+          {/* Reset Button */}
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'transparent', mb: 0.6, userSelect: 'none' }}>
+              &nbsp;
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<ResetIcon sx={{ fontSize: 18 }} />}
+              onClick={() => {
+                setSearch('');
+                setPartyFilter('All');
+                setStatusFilter('All');
+                setMonthFilter('ALL');
+                setSelectedMonths([]);
+                setPage(0);
+              }}
+              sx={{
+                borderRadius: '8px',
+                py: 0.9,
+                px: 2,
+                borderColor: mode === 'dark' ? '#1e293b' : '#e2e8f0',
+                color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.84rem',
+                height: 40,
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  borderColor: '#2563eb',
+                  bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.1)' : '#eff6ff',
+                },
+              }}
+            >
+              {language === 'gu' ? 'રીસેટ' : 'Reset'}
+            </Button>
           </Box>
         </Box>
 
-        {(partyFilter !== 'All' || (monthFilter !== 'All' && monthFilter !== 'ALL') || statusFilter !== 'All' || search) && (
+        {(partyFilter !== 'All' || selectedMonths.length > 0 || (monthFilter !== 'All' && monthFilter !== 'ALL') || statusFilter !== 'All' || search) && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, pt: 1.5, borderTop: `1px dashed ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, flexWrap: 'wrap', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
                 {language === 'gu' ? 'સક્રિય ફિલ્ટર્સ:' : 'Active Filters:'}
               </Typography>
               {partyFilter !== 'All' && (
-                <Chip size="small" label={`Party: ${partyFilter}`} onDelete={() => setPartyFilter('All')} color="primary" variant="outlined" />
+                <Chip size="small" label={`Party: ${partyFilter}`} onDelete={() => { setPartyFilter('All'); setPage(0); }} color="primary" variant="outlined" />
               )}
-              {monthFilter !== 'All' && monthFilter !== 'ALL' && (
-                <Chip size="small" label={`Month: ${getMonthLabel(selectedMonth, language)}`} onDelete={() => setMonthFilter('ALL')} color="secondary" variant="outlined" />
+              {selectedMonths.length > 0 ? (
+                selectedMonths.map((ym) => (
+                  <Chip
+                    key={ym}
+                    size="small"
+                    label={`Month: ${getMonthLabel(ym, language)}`}
+                    onDelete={() => { toggleMonth(ym); setPage(0); }}
+                    color="secondary"
+                    variant="outlined"
+                  />
+                ))
+              ) : (
+                monthFilter !== 'All' && monthFilter !== 'ALL' && (
+                  <Chip
+                    size="small"
+                    label={`Month: ${getMonthLabel(selectedMonth, language)}`}
+                    onDelete={() => { setMonthFilter('ALL'); setSelectedMonths([]); setPage(0); }}
+                    color="secondary"
+                    variant="outlined"
+                  />
+                )
               )}
               {statusFilter !== 'All' && (
-                <Chip size="small" label={`Status: ${statusFilter}`} onDelete={() => setStatusFilter('All')} color="info" variant="outlined" />
+                <Chip size="small" label={`Status: ${statusFilter}`} onDelete={() => { setStatusFilter('All'); setPage(0); }} color="info" variant="outlined" />
               )}
               {search && (
-                <Chip size="small" label={`Search: ${search}`} onDelete={() => setSearch('')} variant="outlined" />
+                <Chip size="small" label={`Search: ${search}`} onDelete={() => { setSearch(''); setPage(0); }} variant="outlined" />
               )}
               <Typography variant="caption" sx={{ ml: 1, fontWeight: 700, color: 'primary.main' }}>
                 ({filteredBills.length} {language === 'gu' ? 'બિલ મળ્યા' : 'bills found'})
               </Typography>
             </Box>
-
             <Button
               size="small"
+              color="error"
               onClick={() => {
                 setSearch('');
                 setPartyFilter('All');
-                setMonthFilter('All');
                 setStatusFilter('All');
+                setMonthFilter('ALL');
+                setSelectedMonths([]);
+                setPage(0);
               }}
-              sx={{ textTransform: 'none', fontSize: '0.75rem', color: 'error.main', fontWeight: 700 }}
+              sx={{ fontSize: '0.75rem', textTransform: 'none', fontWeight: 700 }}
             >
-              {language === 'gu' ? 'બધા ફિલ્ટર્સ સાફ કરો (Clear All)' : 'Clear All Filters'}
+              {language === 'gu' ? 'બધા ફિલ્ટર્સ સાફ કરો' : 'Clear All Filters'}
             </Button>
           </Box>
         )}
       </Card>
+
 
         <Card sx={{ borderRadius: 3, overflow: 'hidden', border: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, boxShadow: mode === 'dark' ? 'none' : '0 4px 12px rgba(0,0,0,0.03)' }}>
         {selectedBillIds.length > 0 && (
@@ -2384,34 +2916,59 @@ export const BillingPage: React.FC = () => {
             </Box>
           </Box>
         )}
-        <TableContainer sx={{ maxHeight: 560, overflow: 'auto' }}>
-          <Table stickyHeader sx={{ minWidth: 1550, borderCollapse: 'separate', borderSpacing: 0 }}>
+        <TableContainer
+          ref={tableContainerRef}
+          sx={{
+            width: '100%',
+            maxHeight: rowsPerPage >= 20 ? { xs: '65vh', sm: '70vh', md: 'calc(100vh - 360px)' } : 'none',
+            overflowX: 'auto',
+            overflowY: rowsPerPage >= 20 ? 'auto' : 'visible',
+            scrollBehavior: 'smooth',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'thin',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+              height: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: mode === 'dark' ? '#0f172a' : '#f1f5f9',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: mode === 'dark' ? '#334155' : '#cbd5e1',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: mode === 'dark' ? '#475569' : '#94a3b8',
+            },
+          }}
+        >
+          <Table size="small" stickyHeader sx={{ minWidth: 1380, borderCollapse: 'separate', borderSpacing: 0 }}>
             <TableHead>
               {/* Group Category Header Row */}
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ position: 'sticky', top: 0, zIndex: 3, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
+                <TableCell colSpan={5} align="center" sx={{ position: 'sticky', top: 0, zIndex: 4, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
                   {language === 'gu' ? 'પાર્ટી અને ચલણ વિગતો' : 'PARTY & CHALLAN DETAILS'}
                 </TableCell>
-                <TableCell colSpan={3} align="center" sx={{ position: 'sticky', top: 0, zIndex: 3, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
+                <TableCell colSpan={3} align="center" sx={{ position: 'sticky', top: 0, zIndex: 4, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
                   {language === 'gu' ? 'બિલિંગ વિગતો' : 'BILLING DETAILS'}
                 </TableCell>
-                <TableCell colSpan={2} align="center" sx={{ position: 'sticky', top: 0, zIndex: 3, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
+                <TableCell colSpan={2} align="center" sx={{ position: 'sticky', top: 0, zIndex: 4, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
                   {language === 'gu' ? 'રકમ અને ટેક્સ વિગતો' : 'AMOUNT & GST DETAILS'}
                 </TableCell>
-                <TableCell colSpan={3} align="center" sx={{ position: 'sticky', top: 0, zIndex: 3, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
+                <TableCell colSpan={3} align="center" sx={{ position: 'sticky', top: 0, zIndex: 4, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
                   {language === 'gu' ? 'બિલ વિગતો' : 'BILL DETAILS'}
                 </TableCell>
-                <TableCell colSpan={2} align="center" sx={{ position: 'sticky', top: 0, zIndex: 3, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
+                <TableCell colSpan={2} align="center" sx={{ position: 'sticky', top: 0, zIndex: 4, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap' }}>
                   {language === 'gu' ? 'પેમેન્ટ વિગતો' : 'PAYMENT DETAILS'}
                 </TableCell>
-                <TableCell colSpan={1} align="center" sx={{ position: 'sticky', top: 0, zIndex: 3, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, whiteSpace: 'nowrap' }}>
+                <TableCell colSpan={1} align="center" sx={{ position: 'sticky', top: 0, zIndex: 4, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700, fontSize: '0.75rem', letterSpacing: 0.5, py: 1, px: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, whiteSpace: 'nowrap' }}>
                   {language === 'gu' ? 'એક્શન' : 'ACTIONS'}
                 </TableCell>
               </TableRow>
 
               {/* Sub-Header Column Row */}
               <TableRow>
-                <TableCell padding="checkbox" align="center" sx={{ position: 'sticky', top: '33px', zIndex: 2, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1px solid ${mode === 'dark' ? '#1e293b' : '#f1f5f9'}`, width: 42, minWidth: 42 }}>
+                <TableCell padding="checkbox" align="center" sx={{ position: 'sticky', top: '33px', zIndex: 3, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1px solid ${mode === 'dark' ? '#1e293b' : '#f1f5f9'}`, width: 42, minWidth: 42 }}>
                   <Checkbox
                     size="small"
                     color="primary"
@@ -2420,14 +2977,14 @@ export const BillingPage: React.FC = () => {
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
-                <TableCell align="center" sx={{ position: 'sticky', top: '33px', zIndex: 2, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 600, fontSize: '0.75rem', py: 1, px: 0.8, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1px solid ${mode === 'dark' ? '#1e293b' : '#f1f5f9'}`, whiteSpace: 'nowrap', minWidth: 50 }}>{language === 'gu' ? 'નં.' : 'NO.'}</TableCell>
+                <TableCell align="center" sx={{ position: 'sticky', top: '33px', zIndex: 3, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 600, fontSize: '0.75rem', py: 1, px: 0.8, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1px solid ${mode === 'dark' ? '#1e293b' : '#f1f5f9'}`, whiteSpace: 'nowrap', minWidth: 50 }}>{language === 'gu' ? 'નં.' : 'NO.'}</TableCell>
                 <TableCell
                   align="center"
                   onClick={() => handleSortToggle('challanDate')}
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'challanDate' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'challanDate' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2451,7 +3008,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'challanNo' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'challanNo' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2475,7 +3032,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'partyName' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'partyName' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2500,7 +3057,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'designNo' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'designNo' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2524,7 +3081,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'amount' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'amount' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2548,7 +3105,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'discount' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'discount' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2567,14 +3124,14 @@ export const BillingPage: React.FC = () => {
                   {getSortHeaderLabel('discount', 'ડિસ્કાઉન્ટ', 'DISCOUNT')}
                 </TableCell>
 
-                <TableCell align="right" sx={{ position: 'sticky', top: '33px', zIndex: 2, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 600, fontSize: '0.75rem', py: 1, px: 0.8, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap', minWidth: 90 }}>GST (5%)</TableCell>
+                <TableCell align="right" sx={{ position: 'sticky', top: '33px', zIndex: 3, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 600, fontSize: '0.75rem', py: 1, px: 0.8, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap', minWidth: 90 }}>GST (5%)</TableCell>
                 <TableCell
                   align="right"
                   onClick={() => handleSortToggle('totalWithTax')}
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'totalWithTax' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'totalWithTax' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2599,7 +3156,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'invoiceDate' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'invoiceDate' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2623,7 +3180,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'invoiceNo' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'invoiceNo' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2641,7 +3198,7 @@ export const BillingPage: React.FC = () => {
                 >
                   {getSortHeaderLabel('invoiceNo', 'બિલ નં.', 'BILL NO.')}
                 </TableCell>
-                <TableCell align="center" sx={{ position: 'sticky', top: '33px', zIndex: 2, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 600, fontSize: '0.75rem', py: 1, px: 0.8, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap', minWidth: 110 }}>{language === 'gu' ? 'મોડ / રિફ.' : 'MODE / REF.'}</TableCell>
+                <TableCell align="center" sx={{ position: 'sticky', top: '33px', zIndex: 3, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 600, fontSize: '0.75rem', py: 1, px: 0.8, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, borderRight: `1.5px solid ${mode === 'dark' ? '#475569' : '#cbd5e1'}`, whiteSpace: 'nowrap', minWidth: 110 }}>{language === 'gu' ? 'મોડ / રિફ.' : 'MODE / REF.'}</TableCell>
 
                 <TableCell
                   align="center"
@@ -2649,7 +3206,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'paymentDate' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'paymentDate' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2673,7 +3230,7 @@ export const BillingPage: React.FC = () => {
                   sx={{
                     position: 'sticky',
                     top: '33px',
-                    zIndex: 2,
+                    zIndex: 3,
                     bgcolor: sortField === 'status' ? (mode === 'dark' ? '#1e293b' : '#e0f2fe') : (mode === 'dark' ? '#0f172a' : '#f8fafc'),
                     color: sortField === 'status' ? 'primary.main' : (mode === 'dark' ? '#94a3b8' : '#64748b'),
                     fontWeight: 600,
@@ -2692,7 +3249,7 @@ export const BillingPage: React.FC = () => {
                   {getSortHeaderLabel('status', 'સ્ટેટસ', 'STATUS')}
                 </TableCell>
 
-                <TableCell align="center" sx={{ position: 'sticky', top: '33px', zIndex: 2, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 600, fontSize: '0.75rem', py: 1, px: 0.8, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, whiteSpace: 'nowrap', minWidth: 200 }}>{language === 'gu' ? 'એક્શન' : 'ACTIONS'}</TableCell>
+                <TableCell align="center" sx={{ position: 'sticky', top: '33px', zIndex: 3, bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc', color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 600, fontSize: '0.75rem', py: 1, px: 0.8, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, whiteSpace: 'nowrap', minWidth: 200 }}>{language === 'gu' ? 'એક્શન' : 'ACTIONS'}</TableCell>
               </TableRow>
             </TableHead>
 
@@ -2703,8 +3260,35 @@ export const BillingPage: React.FC = () => {
                 if (paginated.length === 0) {
                   return (
                     <TableRow>
-                      <TableCell colSpan={16} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                        {language === 'gu' ? 'કોઈ બિલ મળ્યા નથી. ઇનવોઇસ બનાવવા માટે "+ નવું બિલ બનાવો" પર ક્લિક કરો.' : 'No bills found. Click "+ Create New Bill" to generate an invoice.'}
+                      <TableCell colSpan={16} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                            {language === 'gu'
+                              ? (selectedMonths.length > 0 || (monthFilter !== 'ALL' && monthFilter !== 'All')
+                                  ? `${getMultiMonthLabel(language)} માટે કોઈ બિલ રેકોર્ડ મળ્યા નથી`
+                                  : 'કોઈ બિલ મળ્યા નથી.')
+                              : (selectedMonths.length > 0 || (monthFilter !== 'ALL' && monthFilter !== 'All')
+                                  ? `No billing records found for ${getMultiMonthLabel(language)}.`
+                                  : 'No bills found.')}
+                          </Typography>
+                          {(selectedMonths.length > 0 || (monthFilter !== 'ALL' && monthFilter !== 'All') || partyFilter !== 'All' || statusFilter !== 'All' || search) && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => {
+                                setMonthFilter('ALL');
+                                setSelectedMonths([]);
+                                setPartyFilter('All');
+                                setStatusFilter('All');
+                                setSearch('');
+                                setPage(0);
+                              }}
+                              sx={{ mt: 1, textTransform: 'none', borderRadius: '8px', fontWeight: 700 }}
+                            >
+                              {language === 'gu' ? 'તમામ ફિલ્ટર્સ સાફ કરો (બધા બિલ જુઓ)' : 'Clear Filters & View All Bills'}
+                            </Button>
+                          )}
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
@@ -3003,10 +3587,10 @@ export const BillingPage: React.FC = () => {
                       <TableCell
                         align="right"
                         sx={{
-                          fontWeight: 800,
+                          fontWeight: 700,
                           color: mode === 'dark' ? '#34d399' : '#15803d',
                           bgcolor: rowBg,
-                          fontSize: '0.875rem',
+                          fontSize: '0.825rem',
                           py: 1.2,
                           px: 1,
                           verticalAlign: 'middle',
@@ -3298,7 +3882,7 @@ export const BillingPage: React.FC = () => {
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[10, 25, 50, 100]}
+          rowsPerPageOptions={[10, 20, 50, 100]}
           component="div"
           count={filteredBills.length}
           rowsPerPage={rowsPerPage}
@@ -3465,25 +4049,40 @@ export const BillingPage: React.FC = () => {
                 InputLabelProps={{ shrink: true }}
               />
 
-              <TextField
-                fullWidth
-                type="date"
-                label="Delivery Date (ડિલિવરી તારીખ)"
-                value={ensureIsoDate(formData.deliveryDate || formData.dueDate)}
-                onChange={(e) => {
-                  const newDelDate = ensureIsoDate(e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    deliveryDate: newDelDate,
-                    items: prev.items.map((it) => (
-                      !it.deliveryDate || it.deliveryDate === prev.deliveryDate || it.deliveryDate === prev.dueDate
-                        ? { ...it, deliveryDate: newDelDate }
-                        : it
-                    )),
-                  }));
-                }}
-                InputLabelProps={{ shrink: true }}
-              />
+              {isWorking ? (
+                <TextField
+                  fullWidth
+                  disabled
+                  label="Delivery Date (ડિલિવરી તારીખ)"
+                  value={language === 'gu' ? 'વર્કિંગ (ડિલિવરી તારીખ ઉમેરાશે નહીં)' : 'Working (No Delivery Date)'}
+                  InputProps={{
+                    startAdornment: (
+                      <Chip label="Working" size="small" color="warning" sx={{ mr: 1, fontWeight: 800, height: 22 }} />
+                    ),
+                  }}
+                  helperText={language === 'gu' ? 'વર્કિંગ સ્વિચ ચાલુ છે - ડિલિવરી તારીખ ઉમેરાશે નહીં' : 'Working switch is ON — Delivery Date is omitted'}
+                />
+              ) : (
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Delivery Date (ડિલિવરી તારીખ)"
+                  value={formData.deliveryDate || ''}
+                  onChange={(e) => {
+                    const newDelDate = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      deliveryDate: newDelDate,
+                      items: prev.items.map((it) => (
+                        !it.deliveryDate || it.deliveryDate === prev.deliveryDate
+                          ? { ...it, deliveryDate: newDelDate }
+                          : it
+                      )),
+                    }));
+                  }}
+                  InputLabelProps={{ shrink: true }}
+                />
+              )}
             </Box>
 
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mt: 3, mb: 1.5, gap: 0.5 }}>
@@ -3512,8 +4111,9 @@ export const BillingPage: React.FC = () => {
                     fullWidth
                     size="small"
                     type="date"
+                    disabled={isWorking}
                     label="Delivery Date (ડિલિવરી તા.)"
-                    value={item.deliveryDate || formData.deliveryDate || item.challanDate || ''}
+                    value={isWorking ? '' : (item.deliveryDate || formData.deliveryDate || '')}
                     onChange={(e) => handleItemChange(idx, 'deliveryDate', e.target.value)}
                     InputLabelProps={{ shrink: true }}
                   />
@@ -3877,7 +4477,10 @@ export const BillingPage: React.FC = () => {
       {/* VIEW BILL DETAILS DIALOG */}
       <Dialog
         open={viewDetailsOpen}
-        onClose={() => setViewDetailsOpen(false)}
+        onClose={() => {
+          setViewDetailsOpen(false);
+          setBillToView(null);
+        }}
         maxWidth="lg"
         fullWidth
         PaperProps={{
@@ -3954,7 +4557,10 @@ export const BillingPage: React.FC = () => {
                 />
                 <IconButton
                   size="small"
-                  onClick={() => setViewDetailsOpen(false)}
+                  onClick={() => {
+                    setViewDetailsOpen(false);
+                    setBillToView(null);
+                  }}
                   sx={{
                     color: '#ffffff',
                     bgcolor: 'rgba(255,255,255,0.15)',
@@ -4129,7 +4735,7 @@ export const BillingPage: React.FC = () => {
                         {language === 'gu' ? 'ડિલિવરી તારીખ' : 'Delivery Date'}
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 700, color: mode === 'dark' ? '#cbd5e1' : '#334155', mt: 0.2 }}>
-                        {formatDate(billToView.deliveryDate || billToView.dueDate || billToView.date)}
+                        {billToView.isWorking || !billToView.deliveryDate ? '-' : formatDate(billToView.deliveryDate)}
                       </Typography>
                     </Box>
                   </Box>
@@ -4648,7 +5254,10 @@ export const BillingPage: React.FC = () => {
               <Button
                 variant="outlined"
                 color="inherit"
-                onClick={() => setViewDetailsOpen(false)}
+                onClick={() => {
+                  setViewDetailsOpen(false);
+                  setBillToView(null);
+                }}
                 sx={{
                   fontWeight: 700,
                   textTransform: 'none',
@@ -4668,12 +5277,13 @@ export const BillingPage: React.FC = () => {
 
       {/* Hidden A4 Details PDF Export Template Container */}
       {billToView && (
-        <div style={{ position: 'absolute', top: 0, left: '-9999px', width: '760px', backgroundColor: '#ffffff', opacity: 1, pointerEvents: 'none', zIndex: -1000 }}>
+        <div style={{ position: 'fixed', top: 0, left: '-9999px', width: '760px', backgroundColor: '#ffffff', opacity: 0, pointerEvents: 'none', zIndex: -1000, height: 0, overflow: 'hidden' }}>
           <div id="printable-bill-details-pdf-template">
             <BillDetailsPdfTemplate bill={billToView} settings={settings} language={language} parties={parties} />
           </div>
         </div>
       )}
+
 
       {(selectedBill || selectedBillsForPrint.length > 0) && (
         <InvoiceModal
@@ -4751,6 +5361,19 @@ export const BillingPage: React.FC = () => {
           />
         </MenuItem>
       </Menu>
+
+      {/* TEXTILE SALES BILLING STATEMENT MODAL (A4 Print & PDF) */}
+      <BillingStatementModal
+        open={statementModalOpen}
+        onClose={() => setStatementModalOpen(false)}
+        bills={filteredBills}
+        selectedMonth={selectedMonth}
+        monthLabel={getMultiMonthLabel ? getMultiMonthLabel(language as 'en' | 'gu') : getMonthLabel(selectedMonth, language as 'en' | 'gu')}
+        selectedPartyFilter={partyFilter}
+        selectedStatusFilter={statusFilter}
+        settings={settings}
+        language={language}
+      />
     </Box>
   );
 };

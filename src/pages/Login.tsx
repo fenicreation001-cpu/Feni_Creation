@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
@@ -12,24 +10,25 @@ import {
   Alert,
   Tooltip,
 } from '@mui/material';
-import LogoIcon from '@mui/icons-material/Storefront';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import LockIcon from '@mui/icons-material/Lock';
-import EmailIcon from '@mui/icons-material/Email';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import TranslateIcon from '@mui/icons-material/Translate';
+import {
+  Visibility,
+  VisibilityOff,
+  LockOutlined as LockOutlinedIcon,
+  MailOutline as MailOutlineIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
+  Translate as TranslateIcon,
+  ArrowForward as ArrowForwardIcon,
+  VerifiedUserOutlined as VerifiedUserOutlinedIcon,
+} from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeContext } from '../context/ThemeContext';
-import { useCompany } from '../context/CompanyContext';
 import { useNavigate } from 'react-router-dom';
 import peacockBgImage from '../assets/images/peacock_textile_bg_1787302488685.jpg';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
   const { mode, toggleTheme, language, toggleLanguage } = useThemeContext();
-  const { settings } = useCompany();
   const navigate = useNavigate();
   const [email, setEmail] = useState('fenicreation001@gmail.com');
   const [password, setPassword] = useState('admin123');
@@ -55,208 +54,412 @@ export const Login: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
+        width: '100vw',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
+        bgcolor: mode === 'dark' ? '#090d16' : '#ffffff',
+        p: { xs: 2, md: 3 },
+        boxSizing: 'border-box',
         overflow: 'hidden',
-        p: 2,
-        backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 27, 75, 0.78) 50%, rgba(15, 23, 42, 0.9) 100%), url(${peacockBgImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Decorative Golden Zari & Embroidery Pattern Overlay */}
+      {/* LEFT EDITORIAL HERO CARD (Matching Image 1) */}
       <Box
         sx={{
-          position: 'absolute',
-          inset: 0,
-          opacity: mode === 'dark' ? 0.12 : 0.18,
-          backgroundImage: `radial-gradient(rgba(251, 191, 36, 0.6) 1px, transparent 1px), radial-gradient(rgba(99, 102, 241, 0.6) 1px, transparent 1px)`,
-          backgroundSize: '36px 36px',
-          backgroundPosition: '0 0, 18px 18px',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Soft Ambient Peacock Blue Glows */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '-10%',
-          left: '10%',
-          width: '400px',
-          height: '400px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, rgba(6, 182, 212, 0) 70%)',
-          filter: 'blur(70px)',
-          pointerEvents: 'none',
-        }}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: '-10%',
-          right: '10%',
-          width: '450px',
-          height: '450px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, rgba(139, 92, 246, 0) 70%)',
-          filter: 'blur(80px)',
-          pointerEvents: 'none',
-        }}
-      />
-      {/* Top right language & theme quick actions */}
-      <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 1 }}>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<TranslateIcon fontSize="small" />}
-          onClick={toggleLanguage}
-          sx={{
-            color: '#fff',
-            borderColor: 'rgba(255,255,255,0.4)',
-            borderRadius: '20px',
-            fontWeight: 700,
-            '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
-          }}
-        >
-          {language === 'en' ? 'ગુજરાતી' : 'English'}
-        </Button>
-        <Tooltip title={mode === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>
-          <IconButton onClick={toggleTheme} sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' }}>
-            {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon sx={{ color: '#ecc94b' }} />}
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      <Card 
-        sx={{ 
-          maxWidth: 450, 
-          width: '100%', 
-          borderRadius: 4, 
-          boxShadow: mode === 'dark' 
-            ? '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(99, 102, 241, 0.15)' 
-            : '0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 30px rgba(99, 102, 241, 0.2)',
-          bgcolor: mode === 'dark' ? 'rgba(30, 41, 59, 0.92)' : 'rgba(255, 255, 255, 0.96)',
-          backdropFilter: 'blur(16px)',
-          border: `1px solid ${mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.8)'}`,
+          display: { xs: 'none', lg: 'flex' },
+          flex: '1 1 50%',
+          maxWidth: '50%',
+          borderRadius: '28px',
           position: 'relative',
-          zIndex: 1,
+          overflow: 'hidden',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          p: { md: 5, xl: 6 },
+          color: '#ffffff',
+          backgroundImage: `linear-gradient(160deg, rgba(7, 19, 44, 0.88) 0%, rgba(15, 32, 67, 0.75) 45%, rgba(5, 13, 31, 0.92) 100%), url(${peacockBgImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          boxShadow: '0 20px 40px -15px rgba(5, 13, 31, 0.5)',
         }}
       >
-        <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-          {/* Brand Header */}
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            {settings.logoUrl ? (
-              <Box
-                component="img"
-                src={settings.logoUrl}
-                alt="Logo"
+        {/* Top Branding */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '12px',
+              border: '1px solid rgba(147, 197, 253, 0.35)',
+              bgcolor: 'rgba(15, 32, 67, 0.75)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.4rem',
+              fontWeight: 400,
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontStyle: 'italic',
+              color: '#93c5fd',
+            }}
+          >
+            f
+          </Box>
+          <Box>
+            <Typography
+              sx={{
+                fontWeight: 800,
+                fontSize: '0.92rem',
+                letterSpacing: '0.06em',
+                color: '#ffffff',
+                lineHeight: 1.2,
+              }}
+            >
+              FENI CREATION
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '0.74rem',
+                color: '#93c5fd',
+                letterSpacing: '0.02em',
+              }}
+            >
+              Embroidery Creation
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Center Editorial Headline */}
+        <Box sx={{ my: 'auto', py: 4, maxWidth: 560 }}>
+          <Typography
+            sx={{
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              color: '#93c5fd',
+              textTransform: 'uppercase',
+              mb: 2,
+            }}
+          >
+            Crafted with care. Managed with clarity.
+          </Typography>
+
+          <Typography
+            className="font-serif-hero"
+            sx={{
+              fontSize: { lg: '3.2rem', xl: '3.8rem' },
+              fontWeight: 600,
+              lineHeight: 1.08,
+              letterSpacing: '-0.02em',
+              color: '#ffffff',
+              mb: 2.5,
+              fontFamily: '"Playfair Display", Georgia, serif',
+            }}
+          >
+            Beautiful craft.
+            <br />
+            Better business.
+          </Typography>
+
+          <Typography
+            sx={{
+              fontSize: '1.05rem',
+              lineHeight: 1.6,
+              color: '#cbd5e1',
+              fontWeight: 400,
+              maxWidth: 480,
+            }}
+          >
+            {language === 'gu'
+              ? 'તમારા એમ્બ્રોઇડરી વ્યવસાયના દરેક બિલ, દરેક પાર્ટી અને તમામ વિગતો માટેનું એક સુરક્ષિત વર્કસ્પેસ.'
+              : 'A focused workspace for every bill, every party and every detail of your embroidery business.'}
+          </Typography>
+        </Box>
+
+        {/* Bottom 3 Feature Pillars */}
+        <Box
+          sx={{
+            pt: 3,
+            borderTop: '1px solid rgba(147, 197, 253, 0.25)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 3,
+          }}
+        >
+          <Box>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#ffffff', mb: 0.3 }}>
+              {language === 'gu' ? 'બિલિંગ અને ઉઘરાણી' : 'Billing & collections'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.74rem', color: '#93c5fd' }}>
+              One connected workspace
+            </Typography>
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#ffffff', mb: 0.3 }}>
+              {language === 'gu' ? 'મટીરીયલ ખરીદી ટ્રેકિંગ' : 'Purchase tracking'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.74rem', color: '#93c5fd' }}>
+              One connected workspace
+            </Typography>
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#ffffff', mb: 0.3 }}>
+              {language === 'gu' ? 'કારીગર પગાર હિસાબ' : 'Worker salaries'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.74rem', color: '#93c5fd' }}>
+              One connected workspace
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* RIGHT LOGIN FORM (Matching Image 1) */}
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          p: { xs: 2, sm: 4, md: 6 },
+          position: 'relative',
+        }}
+      >
+        {/* Top Right Quick Controls */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1.5 }}>
+          <Chip
+            label={language === 'gu' ? 'સુરક્ષિત એડમિન એક્સેસ' : 'Secure admin access'}
+            size="small"
+            sx={{
+              bgcolor: mode === 'dark' ? 'rgba(16, 185, 129, 0.15)' : '#e6f4ea',
+              color: mode === 'dark' ? '#34d399' : '#0f766e',
+              fontWeight: 600,
+              fontSize: '0.74rem',
+              borderRadius: '20px',
+              border: `1px solid ${mode === 'dark' ? 'rgba(16, 185, 129, 0.3)' : '#bbf7d0'}`,
+              height: 26,
+            }}
+          />
+          <Button
+            size="small"
+            onClick={toggleLanguage}
+            startIcon={<TranslateIcon sx={{ fontSize: 15 }} />}
+            sx={{
+              color: mode === 'dark' ? '#cbd5e1' : '#475569',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              textTransform: 'none',
+              px: 1,
+              borderRadius: '16px',
+            }}
+          >
+            {language === 'en' ? 'ગુજરાતી' : 'English'}
+          </Button>
+          <Tooltip title={mode === 'light' ? 'Dark Mode' : 'Light Mode'}>
+            <IconButton onClick={toggleTheme} size="small" sx={{ color: mode === 'dark' ? '#ecc94b' : '#64748b' }}>
+              {mode === 'light' ? <DarkModeIcon sx={{ fontSize: 18 }} /> : <LightModeIcon sx={{ fontSize: 18 }} />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Center Login Box */}
+        <Box sx={{ width: '100%', maxWidth: 420, mx: 'auto', my: 'auto', py: 4 }}>
+          <Typography
+            sx={{
+              color: '#2563eb',
+              fontWeight: 700,
+              fontSize: '0.78rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              mb: 1,
+            }}
+          >
+            FENI CREATION
+          </Typography>
+
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              letterSpacing: '-0.02em',
+              fontSize: { xs: '1.9rem', sm: '2.25rem' },
+              mb: 0.8,
+            }}
+          >
+            {language === 'gu' ? 'સ્વાગત છે.' : 'Welcome back.'}
+          </Typography>
+
+          <Typography
+            sx={{
+              color: mode === 'dark' ? '#94a3b8' : '#64748b',
+              fontSize: '0.92rem',
+              mb: 2,
+            }}
+          >
+            {language === 'gu'
+              ? 'તમારા એમ્બ્રોઇડરી વ્યવસાયના સંચાલન માટે લૉગ ઇન કરો.'
+              : 'Log in to manage your embroidery business.'}
+          </Typography>
+
+          <Chip
+            label={language === 'gu' ? 'એડમિન લૉગિન' : 'Admin Login'}
+            size="small"
+            sx={{
+              bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.08)',
+              color: mode === 'dark' ? '#60a5fa' : '#1d4ed8',
+              fontWeight: 600,
+              fontSize: '0.74rem',
+              borderRadius: '6px',
+              border: `1px solid ${mode === 'dark' ? 'rgba(37, 99, 235, 0.35)' : '#cbd5e1'}`,
+              height: 24,
+              mb: 3,
+            }}
+          />
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2.5, borderRadius: '8px' }}>
+              {error}
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <Box sx={{ mb: 2.5 }}>
+              <Typography
                 sx={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: '18px',
-                  objectFit: 'contain',
-                  bgcolor: '#ffffff',
-                  p: 1,
-                  mb: 1.5,
-                  boxShadow: '0 10px 20px rgba(79, 70, 229, 0.35)',
-                }}
-              />
-            ) : (
-              <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: '18px',
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mb: 1.5,
-                  boxShadow: '0 10px 20px rgba(79, 70, 229, 0.35)',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  color: mode === 'dark' ? '#cbd5e1' : '#334155',
+                  mb: 0.8,
                 }}
               >
-                <LogoIcon sx={{ fontSize: 36 }} />
-              </Box>
-            )}
-            <Typography variant="h5" sx={{ fontWeight: 800, color: mode === 'dark' ? '#f8fafc' : '#1e1b4b', letterSpacing: '0.5px' }}>
-              {settings.companyName || 'FENI CREATION'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 0.5 }}>
-              {settings.tagline || (language === 'gu' ? 'ટેક્સટાઇલ બિલિંગ અને ઇઆરપી સિસ્ટમ' : 'Textile Billing & ERP Management System')}
-            </Typography>
-            <Chip
-              label={language === 'gu' ? 'એડમિન લૉગિન' : 'Admin Login'}
-              size="small"
-              color="primary"
-              sx={{ mt: 1.5, fontWeight: 700 }}
-            />
-          </Box>
+                {language === 'gu' ? 'એડમિન ઇમેઇલ *' : 'Admin Email *'}
+              </Typography>
+              <TextField
+                fullWidth
+                size="medium"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="fenicreation001@gmail.com"
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MailOutlineIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: '10px',
+                    bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+                    fontSize: '0.9rem',
+                    '& fieldset': {
+                      borderColor: mode === 'dark' ? '#1e293b' : '#e2e8f0',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#2563eb',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#2563eb',
+                    },
+                  },
+                }}
+              />
+            </Box>
 
-          {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
-
-          <Box component="form" onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label={language === 'gu' ? 'એડમિન ઇમેઇલ' : 'Admin Email'}
-              variant="outlined"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              margin="normal"
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailIcon color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label={language === 'gu' ? 'પાસવર્ડ' : 'Password'}
-              type={showPassword ? 'text' : 'password'}
-              variant="outlined"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              margin="normal"
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockIcon color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  color: mode === 'dark' ? '#cbd5e1' : '#334155',
+                  mb: 0.8,
+                }}
+              >
+                {language === 'gu' ? 'પાસવર્ડ *' : 'Password *'}
+              </Typography>
+              <TextField
+                fullWidth
+                size="medium"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        size="small"
+                        sx={{ color: '#94a3b8' }}
+                      >
+                        {showPassword ? <VisibilityOff sx={{ fontSize: 19 }} /> : <Visibility sx={{ fontSize: 19 }} />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: '10px',
+                    bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+                    fontSize: '0.9rem',
+                    '& fieldset': {
+                      borderColor: mode === 'dark' ? '#1e293b' : '#e2e8f0',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#2563eb',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#2563eb',
+                    },
+                  },
+                }}
+              />
+            </Box>
 
             <Button
               type="submit"
               fullWidth
-              variant="contained"
-              size="large"
               disabled={loading}
-              sx={{ mt: 3, mb: 1, py: 1.4, fontSize: '1rem', fontWeight: 700, borderRadius: 2 }}
+              endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                bgcolor: '#2563eb',
+                color: '#ffffff',
+                py: 1.4,
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                textTransform: 'none',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                '&:hover': {
+                  bgcolor: '#1d4ed8',
+                  boxShadow: '0 6px 16px rgba(37, 99, 235, 0.35)',
+                },
+                transition: 'all 0.15s ease',
+              }}
             >
-              {loading 
-                ? (language === 'gu' ? 'લૉગિન થઈ રહ્યું છે...' : 'Signing in...') 
-                : (language === 'gu' ? 'લૉગિન' : 'Login')}
+              {loading ? (language === 'gu' ? 'લૉગિન થઈ રહ્યું છે...' : 'Logging in...') : (language === 'gu' ? 'લૉગિન' : 'Login')}
             </Button>
+          </form>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mt: 3 }}>
+            <VerifiedUserOutlinedIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+            <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
+              {language === 'gu'
+                ? 'અધિકૃત સંચાલકો માટે સુરક્ષિત એક્સેસ.'
+                : 'Protected access for authorized administrators.'}
+            </Typography>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+
+        {/* Footer */}
+        <Box sx={{ textAlign: 'center', pt: 2 }}>
+          <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            FENI CREATION · Embroidery Creation
+          </Typography>
+        </Box>
+      </Box>
     </Box>
   );
 };

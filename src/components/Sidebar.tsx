@@ -1,5 +1,21 @@
+import {
+  Dashboard as DashboardIcon,
+  ReceiptLong as ReceiptLongIcon,
+  ShoppingBagOutlined as ShoppingBagOutlinedIcon,
+  BadgeOutlined as BadgeOutlinedIcon,
+  PeopleOutline as PeopleOutlineIcon,
+  AccountBalanceWalletOutlined as AccountBalanceWalletOutlinedIcon,
+  CalendarMonthOutlined as CalendarMonthOutlinedIcon,
+  BarChartOutlined as BarChartOutlinedIcon,
+  SettingsOutlined as SettingsOutlinedIcon,
+  CodeOutlined as CodeOutlinedIcon,
+  ExpandLess,
+  ExpandMore,
+  GroupOutlined as GroupOutlinedIcon,
+  LogoutOutlined as LogoutOutlinedIcon,
+} from '@mui/icons-material';
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Drawer,
   List,
@@ -9,28 +25,30 @@ import {
   ListItemText,
   Box,
   Typography,
-  Divider,
   Collapse,
   useTheme,
   useMediaQuery,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import BillingIcon from '@mui/icons-material/ReceiptLong';
-import PurchaseIcon from '@mui/icons-material/ShoppingCart';
-import WorkerIcon from '@mui/icons-material/Badge';
-import PartyIcon from '@mui/icons-material/People';
-import PaymentIcon from '@mui/icons-material/AccountBalanceWallet';
-import ReportIcon from '@mui/icons-material/Assessment';
-import CalendarIcon from '@mui/icons-material/CalendarMonth';
-import SettingIcon from '@mui/icons-material/Settings';
-import CodeIcon from '@mui/icons-material/Code';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import AppManageIcon from '@mui/icons-material/AdminPanelSettings';
-import UsersIcon from '@mui/icons-material/Group';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { useThemeContext } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { useCompany } from '../context/CompanyContext';
-import peacockBgImage from '../assets/images/peacock_textile_bg_1787302488685.jpg';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -42,7 +60,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
+  const navigate = useNavigate();
   const { language } = useThemeContext();
+  const { logout } = useAuth();
   const { settings } = useCompany();
 
   const isAppManageActive = location.pathname === '/app-users' || location.pathname === '/api-docs';
@@ -55,21 +75,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
   }, [location.pathname, isAppManageActive]);
 
   const navItems = [
-    { text: 'Dashboard', guText: 'ડેશબોર્ડ', icon: <DashboardIcon sx={{ fontSize: 20 }} />, path: '/' },
-    { text: 'Billing Management', guText: 'બિલિંગ મેનેજમેન્ટ', icon: <BillingIcon sx={{ fontSize: 20 }} />, path: '/billing' },
-    { text: 'Material Purchase', guText: 'ખરીદી મેનેજમેન્ટ', icon: <PurchaseIcon sx={{ fontSize: 20 }} />, path: '/purchases' },
-    { text: 'Worker Salary', guText: 'કારીગર પગાર (ઉપાડ)', icon: <WorkerIcon sx={{ fontSize: 20 }} />, path: '/workers' },
-    { text: 'Party Management', guText: 'પાર્ટી મેનેજમેન્ટ', icon: <PartyIcon sx={{ fontSize: 20 }} />, path: '/parties' },
-    { text: 'Payment Management', guText: 'ચુકવણી મેનેજમેન્ટ', icon: <PaymentIcon sx={{ fontSize: 20 }} />, path: '/payments' },
-    { text: 'Month-Wise Report', guText: 'મહિનાવાર સમરી રિપોર્ટ', icon: <CalendarIcon sx={{ fontSize: 20 }} />, path: '/monthly-summary' },
-    { text: 'Reports & Export', guText: 'રિપોર્ટ્સ અને એક્સપોર્ટ', icon: <ReportIcon sx={{ fontSize: 20 }} />, path: '/reports' },
-    { text: 'Settings', guText: 'સેટિંગ્સ', icon: <SettingIcon sx={{ fontSize: 20 }} />, path: '/settings' },
+    { text: 'Dashboard', guText: 'ડેશબોર્ડ', icon: <DashboardIcon sx={{ fontSize: 19 }} />, path: '/' },
+    { text: 'Billing Management', guText: 'બિલિંગ મેનેજમેન્ટ', icon: <ReceiptLongIcon sx={{ fontSize: 19 }} />, path: '/billing' },
+    { text: 'Material Purchase', guText: 'ખરીદી મેનેજમેન્ટ', icon: <ShoppingBagOutlinedIcon sx={{ fontSize: 19 }} />, path: '/purchases' },
+    { text: 'Worker Salary', guText: 'કારીગર પગાર (ઉપાડ)', icon: <BadgeOutlinedIcon sx={{ fontSize: 19 }} />, path: '/workers' },
+    { text: 'Party Management', guText: 'પાર્ટી મેનેજમેન્ટ', icon: <PeopleOutlineIcon sx={{ fontSize: 19 }} />, path: '/parties' },
+    { text: 'Payment Management', guText: 'ચુકવણી મેનેજમેન્ટ', icon: <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 19 }} />, path: '/payments' },
+    { text: 'Month-Wise Report', guText: 'મહિનાવાર સમરી', icon: <CalendarMonthOutlinedIcon sx={{ fontSize: 19 }} />, path: '/monthly-summary' },
+    { text: 'Reports & Export', guText: 'રિપોર્ટ્સ અને એક્સપોર્ટ', icon: <BarChartOutlinedIcon sx={{ fontSize: 19 }} />, path: '/reports' },
   ];
 
   const appManageItems = [
-    { text: 'App Users', guText: 'એપ યુઝર્સ (મોબાઇલ)', icon: <UsersIcon sx={{ fontSize: 19 }} />, path: '/app-users' },
-    { text: 'Android API Docs', guText: 'એન્ડ્રોઇડ એપીઆઈ ડોક્સ', icon: <CodeIcon sx={{ fontSize: 19 }} />, path: '/api-docs' },
+    { text: 'App Users', guText: 'એપ યુઝર્સ', icon: <GroupOutlinedIcon sx={{ fontSize: 18 }} />, path: '/app-users' },
+    { text: 'Android API Docs', guText: 'એપીઆઈ ડોક્સ', icon: <CodeOutlinedIcon sx={{ fontSize: 18 }} />, path: '/api-docs' },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const drawerContent = (
     <Box
@@ -77,48 +101,51 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        bgcolor: '#0e1726',
+        bgcolor: '#0f172a',
         color: '#f8fafc',
-        py: 2.2,
-        px: 1.5,
+        py: 2.5,
+        px: 1.6,
+        overflowY: 'auto',
       }}
     >
-      {/* Brand Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1, mb: 2.5 }}>
+      {/* Top Logo / Brand (Matching User Screenshot) */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.4, px: 1, mb: 3 }}>
         <Box
-          component="img"
-          src={settings.logoUrl || peacockBgImage}
-          alt="Logo"
           sx={{
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             borderRadius: '10px',
-            objectFit: 'cover',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            bgcolor: '#ffffff',
+            bgcolor: '#1e293b',
+            border: '1px solid #334155',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1rem',
+            fontWeight: 800,
+            color: '#38bdf8',
+            flexShrink: 0,
           }}
-        />
+        >
+          FC
+        </Box>
         <Box sx={{ overflow: 'hidden' }}>
           <Typography
-            variant="subtitle2"
             sx={{
               fontWeight: 800,
-              lineHeight: 1.15,
-              color: '#ffffff',
-              letterSpacing: '0.04em',
               fontSize: '0.88rem',
+              letterSpacing: '0.05em',
+              color: '#ffffff',
+              lineHeight: 1.15,
             }}
             noWrap
           >
             {settings.companyName || 'FENI CREATION'}
           </Typography>
           <Typography
-            variant="caption"
             sx={{
-              color: '#94a3b8',
               fontSize: '0.72rem',
-              fontWeight: 400,
-              display: 'block',
+              color: '#94a3b8',
+              letterSpacing: '0.02em',
             }}
             noWrap
           >
@@ -127,8 +154,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
         </Box>
       </Box>
 
-      {/* Navigation List */}
-      <List disablePadding sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+      {/* Section Header: FINANCE & OPERATIONS */}
+      <Typography
+        sx={{
+          fontSize: '0.675rem',
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          color: '#64748b',
+          textTransform: 'uppercase',
+          px: 1.2,
+          mb: 1,
+        }}
+      >
+        {language === 'gu' ? 'નાણાંકીય અને સંચાલન' : 'FINANCE & OPERATIONS'}
+      </Typography>
+
+      {/* Primary Navigation List */}
+      <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -138,14 +180,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
                 to={item.path}
                 onClick={isMobile ? onCloseMobile : undefined}
                 sx={{
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   py: 0.85,
-                  px: 1.5,
-                  mx: 0.5,
-                  bgcolor: isActive ? 'rgba(99, 102, 241, 0.22)' : 'transparent',
+                  px: 1.4,
+                  bgcolor: isActive ? '#1d4ed8' : 'transparent',
+                  border: isActive ? '1px solid #2563eb' : '1px solid transparent',
                   color: isActive ? '#ffffff' : '#94a3b8',
+                  boxShadow: isActive ? '0 2px 8px rgba(29, 78, 216, 0.4)' : 'none',
                   '&:hover': {
-                    bgcolor: isActive ? 'rgba(99, 102, 241, 0.28)' : 'rgba(255, 255, 255, 0.05)',
+                    bgcolor: isActive ? '#1e40af' : 'rgba(255, 255, 255, 0.06)',
                     color: '#ffffff',
                     '& .MuiListItemIcon-root': {
                       color: '#ffffff',
@@ -156,8 +199,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
               >
                 <ListItemIcon
                   sx={{
-                    color: isActive ? '#818cf8' : '#94a3b8',
-                    minWidth: 34,
+                    color: isActive ? '#ffffff' : '#94a3b8',
+                    minWidth: 32,
                   }}
                 >
                   {item.icon}
@@ -166,9 +209,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
                   primary={language === 'gu' ? item.guText : item.text}
                   primaryTypographyProps={{
                     sx: {
-                      fontSize: '0.84rem',
-                      fontWeight: isActive ? 600 : 500,
-                      fontFamily: '"Plus Jakarta Sans", "Noto Sans Gujarati", sans-serif',
+                      fontSize: '0.83rem',
+                      fontWeight: isActive ? 700 : 500,
+                      color: isActive ? '#ffffff' : '#94a3b8',
                     },
                   }}
                 />
@@ -176,20 +219,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
             </ListItem>
           );
         })}
+      </List>
 
-        {/* App Manage Expandable Menu */}
-        <ListItem disablePadding sx={{ mt: 0.5 }}>
+      {/* Bottom Settings & App Manage items */}
+      <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1.5 }}>
+        <ListItem disablePadding>
           <ListItemButton
-            onClick={() => setAppManageOpen(!appManageOpen)}
+            component={NavLink}
+            to="/settings"
+            onClick={isMobile ? onCloseMobile : undefined}
             sx={{
-              borderRadius: '8px',
-              py: 0.85,
-              px: 1.5,
-              mx: 0.5,
-              bgcolor: isAppManageActive ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-              color: isAppManageActive ? '#818cf8' : '#94a3b8',
+              borderRadius: '10px',
+              py: 0.8,
+              px: 1.4,
+              bgcolor: location.pathname === '/settings' ? '#1d4ed8' : 'transparent',
+              border: location.pathname === '/settings' ? '1px solid #2563eb' : '1px solid transparent',
+              color: location.pathname === '/settings' ? '#ffffff' : '#94a3b8',
+              boxShadow: location.pathname === '/settings' ? '0 2px 8px rgba(29, 78, 216, 0.4)' : 'none',
               '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                bgcolor: location.pathname === '/settings' ? '#1e40af' : 'rgba(255, 255, 255, 0.06)',
                 color: '#ffffff',
                 '& .MuiListItemIcon-root': {
                   color: '#ffffff',
@@ -197,25 +245,49 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
               },
             }}
           >
-            <ListItemIcon sx={{ color: isAppManageActive ? '#818cf8' : '#94a3b8', minWidth: 34 }}>
-              <AppManageIcon sx={{ fontSize: 20 }} />
+            <ListItemIcon sx={{ color: location.pathname === '/settings' ? '#ffffff' : '#94a3b8', minWidth: 32 }}>
+              <SettingsOutlinedIcon sx={{ fontSize: 19 }} />
             </ListItemIcon>
             <ListItemText
-              primary={language === 'gu' ? 'એપ મેનેજ' : 'App Manage'}
-              primaryTypographyProps={{
-                sx: {
-                  fontSize: '0.84rem',
-                  fontWeight: 500,
-                  fontFamily: '"Plus Jakarta Sans", "Noto Sans Gujarati", sans-serif',
-                },
-              }}
+              primary={language === 'gu' ? 'સેટિંગ્સ' : 'Settings'}
+              primaryTypographyProps={{ sx: { fontSize: '0.83rem', fontWeight: location.pathname === '/settings' ? 700 : 500 } }}
             />
-            {appManageOpen ? <ExpandLess sx={{ fontSize: 18 }} /> : <ExpandMore sx={{ fontSize: 18 }} />}
+          </ListItemButton>
+        </ListItem>
+
+        {/* App Manage */}
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() => setAppManageOpen(!appManageOpen)}
+            sx={{
+              borderRadius: '10px',
+              py: 0.8,
+              px: 1.4,
+              bgcolor: isAppManageActive ? '#2563eb' : 'transparent',
+              border: isAppManageActive ? '1px solid #3b82f6' : '1px solid transparent',
+              color: isAppManageActive ? '#ffffff' : '#94a3b8',
+              '&:hover': {
+                bgcolor: isAppManageActive ? '#2563eb' : 'rgba(255, 255, 255, 0.06)',
+                color: '#ffffff',
+                '& .MuiListItemIcon-root': {
+                  color: '#ffffff',
+                },
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: isAppManageActive ? '#ffffff' : '#94a3b8', minWidth: 32 }}>
+              <CodeOutlinedIcon sx={{ fontSize: 19 }} />
+            </ListItemIcon>
+            <ListItemText
+              primary={language === 'gu' ? 'એપ મેનેજમેન્ટ' : 'App Manage'}
+              primaryTypographyProps={{ sx: { fontSize: '0.83rem', fontWeight: isAppManageActive ? 700 : 500 } }}
+            />
+            {appManageOpen ? <ExpandLess sx={{ fontSize: 18, color: isAppManageActive ? '#ffffff' : '#94a3b8' }} /> : <ExpandMore sx={{ fontSize: 18, color: isAppManageActive ? '#ffffff' : '#94a3b8' }} />}
           </ListItemButton>
         </ListItem>
 
         <Collapse in={appManageOpen} timeout="auto" unmountOnExit>
-          <List disablePadding sx={{ pl: 2, display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+          <List component="div" disablePadding sx={{ pl: 2, mt: 0.4 }}>
             {appManageItems.map((subItem) => {
               const isSubActive = location.pathname === subItem.path;
               return (
@@ -226,33 +298,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
                     onClick={isMobile ? onCloseMobile : undefined}
                     sx={{
                       borderRadius: '8px',
-                      py: 0.7,
-                      px: 1.5,
-                      mx: 0.5,
-                      bgcolor: isSubActive ? 'rgba(99, 102, 241, 0.22)' : 'transparent',
+                      py: 0.65,
+                      px: 1.2,
+                      bgcolor: isSubActive ? '#1d4ed8' : 'transparent',
+                      border: isSubActive ? '1px solid #2563eb' : '1px solid transparent',
                       color: isSubActive ? '#ffffff' : '#94a3b8',
+                      boxShadow: isSubActive ? '0 2px 6px rgba(29, 78, 216, 0.35)' : 'none',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.05)',
+                        bgcolor: isSubActive ? '#1e40af' : 'rgba(255, 255, 255, 0.06)',
                         color: '#ffffff',
                       },
                     }}
                   >
-                    <ListItemIcon
-                      sx={{
-                        color: isSubActive ? '#818cf8' : '#94a3b8',
-                        minWidth: 30,
-                      }}
-                    >
+                    <ListItemIcon sx={{ color: isSubActive ? '#ffffff' : '#94a3b8', minWidth: 28 }}>
                       {subItem.icon}
                     </ListItemIcon>
                     <ListItemText
                       primary={language === 'gu' ? subItem.guText : subItem.text}
-                      primaryTypographyProps={{
-                        sx: {
-                          fontSize: '0.8rem',
-                          fontWeight: isSubActive ? 600 : 500,
-                        },
-                      }}
+                      primaryTypographyProps={{ sx: { fontSize: '0.78rem', fontWeight: isSubActive ? 700 : 400 } }}
                     />
                   </ListItemButton>
                 </ListItem>
@@ -262,48 +325,70 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
         </Collapse>
       </List>
 
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', my: 1.5 }} />
-
-      {/* Footer / User Profile Badge */}
+      {/* Bottom Profile Bar (Matching User Screenshot) */}
       <Box
         sx={{
-          p: 1.2,
-          bgcolor: '#141f36',
-          borderRadius: '10px',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          mt: 'auto',
+          pt: 1.5,
+          borderTop: '1px solid #1e293b',
           display: 'flex',
           alignItems: 'center',
-          gap: 1.2,
-          mx: 0.5,
+          justifyContent: 'space-between',
         }}
       >
-        <Box
-          component="img"
-          src={settings.logoUrl || peacockBgImage}
-          alt="Admin"
-          sx={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            objectFit: 'cover',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-          }}
-        />
-        <Box sx={{ overflow: 'hidden', flex: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.8rem', lineHeight: 1.2 }} noWrap>
-            Feni Admin
-          </Typography>
-          <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.68rem', display: 'block', letterSpacing: '0.02em' }} noWrap>
-            GSTIN: {settings.gstin || '24BAMPV2618G2ZI'}
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, minWidth: 0 }}>
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              bgcolor: '#2563eb',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+              flexShrink: 0,
+            }}
+          >
+            FC
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                color: '#ffffff',
+                lineHeight: 1.2,
+              }}
+              noWrap
+            >
+              Feni Admin
+            </Typography>
+            <Typography
+              sx={{
+                color: '#94a3b8',
+                fontSize: '0.65rem',
+                lineHeight: 1.2,
+              }}
+              noWrap
+            >
+              GSTIN: 24BAMPV2618G2Z1
+            </Typography>
+          </Box>
         </Box>
+        <Tooltip title={language === 'gu' ? 'લૉગ આઉટ' : 'Logout'}>
+          <IconButton onClick={handleLogout} size="small" sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' } }}>
+            <LogoutOutlinedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
       </Box>
     </Box>
   );
 
   return (
     <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
-      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -311,18 +396,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile, dra
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, bgcolor: '#0e1726', borderRight: '1px solid rgba(255, 255, 255, 0.05)' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            borderRight: '1px solid #1e293b',
+            bgcolor: '#0f172a',
+          },
         }}
       >
         {drawerContent}
       </Drawer>
 
-      {/* Desktop Permanent Drawer */}
       <Drawer
         variant="permanent"
         sx={{
           display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, bgcolor: '#0e1726', borderRight: '1px solid rgba(255, 255, 255, 0.05)' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: drawerWidth,
+            borderRight: '1px solid #1e293b',
+            bgcolor: '#0f172a',
+          },
         }}
         open
       >

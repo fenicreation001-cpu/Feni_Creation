@@ -11,6 +11,7 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Enable CORS for external mobile apps, Android Retrofit, and Web requests
 app.use((req, res, next) => {
@@ -106,6 +107,7 @@ const PurchaseSchema = new mongoose.Schema({ id: { type: String, index: true }, 
 const WorkerSchema = new mongoose.Schema({ id: { type: String, index: true } }, schemaOptions);
 const PartySchema = new mongoose.Schema({ id: { type: String, index: true } }, schemaOptions);
 const PaymentSchema = new mongoose.Schema({ id: { type: String, index: true } }, schemaOptions);
+const CategorySchema = new mongoose.Schema({ id: { type: String, index: true } }, schemaOptions);
 const SettingsSchema = new mongoose.Schema({ id: { type: String, index: true } }, schemaOptions);
 const AppUserSchema = new mongoose.Schema({ id: { type: String, index: true }, mobileNumber: { type: String, index: true } }, schemaOptions);
 
@@ -114,6 +116,7 @@ delete (mongoose.models as any).Purchase;
 delete (mongoose.models as any).Worker;
 delete (mongoose.models as any).Party;
 delete (mongoose.models as any).Payment;
+delete (mongoose.models as any).Category;
 delete (mongoose.models as any).Settings;
 delete (mongoose.models as any).AppUser;
 
@@ -122,6 +125,7 @@ const PurchaseModel = mongoose.model('Purchase', PurchaseSchema, 'purchases');
 const WorkerModel = mongoose.model('Worker', WorkerSchema, 'workers');
 const PartyModel = mongoose.model('Party', PartySchema, 'parties');
 const PaymentModel = mongoose.model('Payment', PaymentSchema, 'payments');
+const CategoryModel = mongoose.model('Category', CategorySchema, 'categories');
 const SettingsModel = mongoose.model('Settings', SettingsSchema, 'settings');
 const AppUserModel = mongoose.model('AppUser', AppUserSchema, 'appusers');
 
@@ -147,6 +151,7 @@ const initialStore = {
   purchases: [],
   workers: [],
   payments: [],
+  categories: [],
   appUsers: [],
 };
 
@@ -183,7 +188,11 @@ async function syncWithMongo() {
     const docsPayments = await PaymentModel.find().lean();
     memoryStore.payments = docsPayments.map(cleanForMongo);
 
-    // 7. App Users
+    // 7. Categories
+    const docsCategories = await CategoryModel.find().lean();
+    memoryStore.categories = docsCategories ? docsCategories.map(cleanForMongo) : [];
+
+    // 8. App Users
     const docsAppUsers = await AppUserModel.find().lean();
     memoryStore.appUsers = docsAppUsers ? docsAppUsers.map(cleanForMongo) : [];
 
@@ -555,8 +564,134 @@ app.delete('/api/bills/:id', async (req: Request, res: Response) => {
   res.json({ success: true, id });
 });
 
-// 4. Purchases Management
-app.get('/api/purchases', async (req: Request, res: Response) => {
+// 4. Purchases / Raw Materials Management (Supports /api/purchases, /api/materials, /api/material)
+// 4. Purchases / Raw Materials Management (Supports all common REST & RPC conventions)
+const materialPurchaseGetRoutes = [
+  '/api/purchases',
+  '/api/purchase',
+  '/api/purchases/all',
+  '/api/purchases/list',
+  '/api/materials',
+  '/api/material',
+  '/api/materials/all',
+  '/api/materials/list',
+  '/api/material-purchases',
+  '/api/material-purchase',
+  '/api/raw-materials',
+  '/api/raw-material',
+  // Without /api prefix (for Android clients or root baseUrl)
+  '/purchases',
+  '/purchase',
+  '/materials',
+  '/material',
+  '/material-purchases',
+  '/material-purchase',
+  '/raw-materials',
+  '/raw-material',
+];
+
+const materialPurchaseCreateRoutes = [
+  '/api/purchases',
+  '/api/purchase',
+  '/api/purchases/create',
+  '/api/purchase/create',
+  '/api/purchases/add',
+  '/api/purchase/add',
+  '/api/purchases/new',
+  '/api/materials',
+  '/api/material',
+  '/api/materials/create',
+  '/api/material/create',
+  '/api/materials/add',
+  '/api/material/add',
+  '/api/materials/new',
+  '/api/material/new',
+  '/api/materials/save',
+  '/api/material/save',
+  '/api/material-purchases',
+  '/api/material-purchase',
+  '/api/material-purchases/create',
+  '/api/material-purchase/create',
+  '/api/raw-materials',
+  '/api/raw-material',
+  '/api/raw-materials/create',
+  '/api/raw-material/create',
+  // Without /api prefix
+  '/purchases',
+  '/purchase',
+  '/purchases/create',
+  '/purchase/create',
+  '/materials',
+  '/material',
+  '/materials/create',
+  '/material/create',
+  '/materials/add',
+  '/material/add',
+  '/materials/new',
+  '/materials/save',
+  '/material-purchases',
+  '/material-purchase',
+  '/material-purchases/create',
+  '/raw-materials',
+  '/raw-material',
+  '/raw-materials/create',
+];
+
+const materialPurchaseIdRoutes = [
+  '/api/purchases/:id',
+  '/api/purchase/:id',
+  '/api/purchases/update/:id',
+  '/api/purchase/update/:id',
+  '/api/materials/:id',
+  '/api/material/:id',
+  '/api/materials/update/:id',
+  '/api/material/update/:id',
+  '/api/materials/edit/:id',
+  '/api/material/edit/:id',
+  '/api/material-purchases/:id',
+  '/api/material-purchase/:id',
+  '/api/raw-materials/:id',
+  '/api/raw-material/:id',
+  // Without /api prefix
+  '/purchases/:id',
+  '/purchase/:id',
+  '/materials/:id',
+  '/material/:id',
+  '/materials/update/:id',
+  '/material/update/:id',
+  '/material-purchases/:id',
+  '/material-purchase/:id',
+  '/raw-materials/:id',
+  '/raw-material/:id',
+];
+
+const materialPurchaseDeleteRoutes = [
+  '/api/purchases/:id',
+  '/api/purchase/:id',
+  '/api/purchases/delete/:id',
+  '/api/purchase/delete/:id',
+  '/api/materials/:id',
+  '/api/material/:id',
+  '/api/materials/delete/:id',
+  '/api/material/delete/:id',
+  '/api/material-purchases/:id',
+  '/api/material-purchase/:id',
+  '/api/raw-materials/:id',
+  '/api/raw-material/:id',
+  // Without /api prefix
+  '/purchases/:id',
+  '/purchase/:id',
+  '/purchases/delete/:id',
+  '/materials/:id',
+  '/material/:id',
+  '/materials/delete/:id',
+  '/material-purchases/:id',
+  '/material-purchase/:id',
+  '/raw-materials/:id',
+  '/raw-material/:id',
+];
+
+app.get(materialPurchaseGetRoutes, async (req: Request, res: Response) => {
   const isConnected = await ensureDbConnected();
   if (isConnected) {
     try {
@@ -578,103 +713,311 @@ app.get('/api/purchases', async (req: Request, res: Response) => {
         saveToLocalBackup();
       }
     } catch (e: any) {
-      console.warn('Error reading purchases from MongoDB:', e.message);
+      console.warn('Error reading purchases/materials from MongoDB:', e.message);
     }
   }
   res.json(memoryStore.purchases);
 });
 
-app.post('/api/purchases', async (req: Request, res: Response) => {
-  const newPurchase = req.body;
+app.get(materialPurchaseIdRoutes, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  let item = memoryStore.purchases.find(p => p.id === id || (p as any)._id === id || p.purchaseNo === id);
+  if (!item) {
+    await ensureDbConnected();
+    if (isDbConnected()) {
+      try {
+        const isObjectId = mongoose.Types.ObjectId.isValid(id);
+        const filter = isObjectId ? { $or: [{ id }, { _id: id }, { purchaseNo: id }] } : { $or: [{ id }, { purchaseNo: id }] };
+        const doc = await PurchaseModel.findOne(filter).lean();
+        if (doc) {
+          item = cleanForMongo(doc);
+          memoryStore.purchases.push(item);
+        }
+      } catch (err: any) {
+        console.warn('Error fetching material by ID from MongoDB:', err.message);
+      }
+    }
+  }
+
+  if (!item) {
+    return res.status(404).json({ success: false, error: 'Material purchase not found', id });
+  }
+  res.json(item);
+});
+
+// CREATE (Supports all alias routes: /api/materials, /api/material, /api/materials/create, /api/material/create, etc.)
+app.post(materialPurchaseCreateRoutes, async (req: Request, res: Response) => {
+  const body = req.body || {};
+  const data = (body.purchase || body.material || body.data || body) as Record<string, any>;
+
   const count = memoryStore.purchases.length + 1;
-  const purchaseNo = newPurchase.purchaseNo || `PUR-2026-${String(count).padStart(3, '0')}`;
-  
-  const items = Array.isArray(newPurchase.items) ? newPurchase.items : [];
-  const itemsSubtotal = items.reduce((acc: number, item: any) => acc + (Number(item.amount) || 0), 0);
-  const adjustAmount = Number(newPurchase.adjustAmount || 0);
-  const subtotal = newPurchase.subtotal !== undefined ? Number(newPurchase.subtotal) : Number((itemsSubtotal + adjustAmount).toFixed(2));
+  const purchaseNo = data.purchaseNo || data.billNo || data.invoiceNo || data.challanNo || `PUR-2026-${String(count).padStart(3, '0')}`;
+  const supplierName = String(data.supplierName || data.partyName || data.supplier || data.vendor || data.party || data.dealer || 'Raw Material Supplier').trim();
+  const supplierGstin = String(data.supplierGstin || data.gstin || '').trim();
+  const supplierId = String(data.supplierId || data.partyId || '').trim();
+  const date = data.date || data.billDate || data.challanDate || data.purchaseDate || new Date().toISOString().split('T')[0];
 
-  const cgst = Number((subtotal * 0.025).toFixed(2));
-  const sgst = Number((subtotal * 0.025).toFixed(2));
-  const totalAmount = newPurchase.totalAmount !== undefined ? Number(newPurchase.totalAmount) : Number((subtotal + cgst + sgst).toFixed(2));
-  const paidAmount = Number(newPurchase.paidAmount || 0);
-  const pendingAmount = Number((totalAmount - paidAmount).toFixed(2));
+  // Auto-detect or build items array
+  let items: any[] = [];
+  if (Array.isArray(data.items) && data.items.length > 0) {
+    items = data.items.map((i: any) => ({
+      challanDate: i.challanDate || date,
+      challanNo: i.challanNo || purchaseNo,
+      description: i.description || i.materialName || i.name || i.item || 'Material',
+      quantity: Number(i.quantity ?? i.qty ?? 1),
+      unit: i.unit || i.uom || 'કોન',
+      rate: Number(i.rate ?? i.price ?? i.unitPrice ?? 0),
+      amount: Number(i.amount ?? ((Number(i.quantity ?? i.qty ?? 1)) * (Number(i.rate ?? i.price ?? 0))) ?? 0),
+    }));
+  } else {
+    const matName = data.materialName || data.material || data.name || data.title || data.item || data.description || 'Raw Material';
+    const qty = Number(data.quantity ?? data.qty ?? data.count ?? 1);
+    const rate = Number(data.rate ?? data.price ?? data.unitPrice ?? 0);
+    const amt = Number(data.amount ?? (rate > 0 ? (qty * rate) : (data.totalAmount || data.subtotal || 0)));
+    items = [{
+      challanDate: date,
+      challanNo: purchaseNo,
+      description: matName,
+      quantity: qty > 0 ? qty : 1,
+      unit: data.unit || data.uom || 'કોન',
+      rate: rate > 0 ? rate : (qty > 0 && amt > 0 ? Number((amt / qty).toFixed(2)) : 0),
+      amount: amt,
+    }];
+  }
 
-  let status = 'Pending';
-  if (paidAmount > 0 || newPurchase.paymentStatus === 'Paid' || newPurchase.paymentStatus === 'Received') status = 'Paid';
+  const itemsSubtotal = items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+  const adjustAmount = Number(data.adjustAmount || 0);
+  const subtotal = data.subtotal !== undefined && data.subtotal !== null && data.subtotal !== ''
+    ? Number(data.subtotal)
+    : (itemsSubtotal > 0 ? itemsSubtotal : Number(data.totalAmount || 0));
+
+  const hasTax = data.taxEnabled === true || Number(data.cgst) > 0 || Number(data.sgst) > 0 || Number(data.totalTax) > 0 || Number(data.tax) > 0;
+  const cgst = Number(data.cgst ?? (hasTax ? (data.tax ? Number(data.tax) / 2 : (subtotal * 0.025).toFixed(2)) : 0));
+  const sgst = Number(data.sgst ?? (hasTax ? (data.tax ? Number(data.tax) / 2 : (subtotal * 0.025).toFixed(2)) : 0));
+  const totalTax = Number(data.totalTax ?? (cgst + sgst));
+
+  const totalAmount = data.totalAmount !== undefined && data.totalAmount !== null && data.totalAmount !== ''
+    ? Number(data.totalAmount)
+    : Number((subtotal + totalTax + adjustAmount).toFixed(2));
+
+  const paidAmount = Number(data.paidAmount ?? data.paid ?? 0);
+  const pendingAmount = Number(data.pendingAmount ?? (totalAmount - paidAmount).toFixed(2));
+
+  let status: 'Paid' | 'Pending' | 'Partial' = 'Pending';
+  if (paidAmount >= totalAmount && totalAmount > 0) status = 'Paid';
+  else if (paidAmount > 0) status = 'Partial';
+  else if (data.status === 'Paid' || data.paymentStatus === 'Paid' || data.paymentStatus === 'Received') status = 'Paid';
+
+  const assignedId = String(data.id || data._id || ('pur_' + Date.now()));
 
   const createdPurchase = {
-    ...newPurchase,
-    id: 'pur_' + Date.now(),
+    ...data,
+    id: assignedId,
     purchaseNo,
-    subtotal,
-    cgst,
-    sgst,
-    totalAmount,
-    paidAmount,
-    pendingAmount,
+    supplierId,
+    supplierName,
+    supplierGstin,
+    date,
+    paymentDate: data.paymentDate || (paidAmount > 0 ? date : ''),
+    paymentMethod: data.paymentMethod || 'રોકડ કેશ',
+    chequeNo: data.chequeNo || '',
+    items,
+    materialName: data.materialName || data.material || data.name || items.map(i => i.description).filter(Boolean).join(', ') || 'Raw Material',
+    subtotal: Number(subtotal.toFixed(2)),
+    cgst: Number(cgst.toFixed(2)),
+    sgst: Number(sgst.toFixed(2)),
+    totalTax: Number(totalTax.toFixed(2)),
+    adjustAmount: Number(adjustAmount.toFixed(2)),
+    totalAmount: Number(totalAmount.toFixed(2)),
+    paidAmount: Number(paidAmount.toFixed(2)),
+    pendingAmount: Number(pendingAmount.toFixed(2)),
     status,
-    date: newPurchase.date || new Date().toISOString().split('T')[0],
+    notes: data.notes || '',
+    createdAt: data.createdAt || new Date().toISOString(),
   };
 
-  memoryStore.purchases.unshift(createdPurchase);
+  // Upsert in memoryStore
+  const existingIdx = memoryStore.purchases.findIndex(p => p.id === assignedId || p.purchaseNo === purchaseNo);
+  if (existingIdx !== -1) {
+    memoryStore.purchases[existingIdx] = createdPurchase;
+  } else {
+    memoryStore.purchases.unshift(createdPurchase);
+  }
+  saveToLocalBackup();
 
+  // Upsert in MongoDB Atlas
   await ensureDbConnected();
   if (isDbConnected()) {
     try {
-      await PurchaseModel.updateOne({ id: createdPurchase.id }, { $set: cleanForMongo(createdPurchase) }, { upsert: true });
-      console.log('Saved purchase to MongoDB Atlas:', createdPurchase.purchaseNo);
+      const isObjectId = mongoose.Types.ObjectId.isValid(assignedId);
+      const filter = isObjectId ? { $or: [{ id: assignedId }, { _id: assignedId }, { purchaseNo }] } : { $or: [{ id: assignedId }, { purchaseNo }] };
+      await PurchaseModel.findOneAndUpdate(filter, { $set: cleanForMongo(createdPurchase) }, { upsert: true, new: true });
+      console.log('Saved/Updated material purchase in MongoDB Atlas:', createdPurchase.id, createdPurchase.purchaseNo);
     } catch (err: any) {
       console.error('MongoDB Purchase save error:', err.message);
     }
   }
 
-  res.json({ success: true, purchase: createdPurchase });
+  res.status(201).json({
+    success: true,
+    message: 'Material purchase created successfully',
+    id: createdPurchase.id,
+    purchaseNo: createdPurchase.purchaseNo,
+    totalAmount: createdPurchase.totalAmount,
+    purchase: createdPurchase,
+    material: createdPurchase,
+    data: createdPurchase,
+    ...createdPurchase,
+  });
 });
 
-app.put('/api/purchases/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const index = memoryStore.purchases.findIndex(p => p.id === id);
-  if (index !== -1) {
-    const updated = { ...memoryStore.purchases[index], ...req.body };
-    const paidAmount = Number(updated.paidAmount || 0);
-    updated.status = (paidAmount > 0 || updated.paymentStatus === 'Paid' || updated.paymentStatus === 'Received') ? 'Paid' : 'Pending';
-    memoryStore.purchases[index] = updated;
-    saveToLocalBackup();
+// UPDATE (Supports PUT and POST on materialPurchaseIdRoutes)
+const handleMaterialUpdate = async (req: Request, res: Response) => {
+  const rawId = req.params.id;
+  const cleanId = rawId.replace(/_\d{4}-\d{2}$/, '');
 
-    if (isDbConnected()) {
-      try {
-        await PurchaseModel.updateOne({ id }, { $set: cleanForMongo(updated) }, { upsert: true });
-        console.log('Updated purchase in MongoDB Atlas:', id);
-      } catch (err: any) {
-        console.error('MongoDB Purchase update error:', err.message);
+  let index = memoryStore.purchases.findIndex(
+    p => p.id === rawId || p.id === cleanId || (p as any)._id === rawId || (p as any)._id === cleanId || p.purchaseNo === rawId || p.purchaseNo === cleanId
+  );
+  let existing = index !== -1 ? memoryStore.purchases[index] : null;
+
+  await ensureDbConnected();
+  if (!existing && isDbConnected()) {
+    try {
+      const filterConditions: any[] = [{ id: rawId }, { id: cleanId }, { purchaseNo: rawId }, { purchaseNo: cleanId }];
+      if (mongoose.Types.ObjectId.isValid(rawId)) filterConditions.push({ _id: rawId });
+      if (mongoose.Types.ObjectId.isValid(cleanId)) filterConditions.push({ _id: cleanId });
+
+      const doc = await PurchaseModel.findOne({ $or: filterConditions }).lean();
+      if (doc) {
+        existing = cleanForMongo(doc);
       }
+    } catch (e: any) {
+      console.warn('Error fetching purchase from Mongo on PUT:', e.message);
     }
-
-    res.json({ success: true, purchase: memoryStore.purchases[index] });
-  } else {
-    res.status(404).json({ error: 'Purchase not found' });
   }
-});
 
-app.delete('/api/purchases/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  memoryStore.purchases = memoryStore.purchases.filter(p => p.id !== id && p.purchaseNo !== id);
+  const reqData = req.body || {};
+  const hasNewItems = Array.isArray(reqData.items);
+  const items = hasNewItems ? reqData.items : (existing?.items || []);
+  const itemsSubtotal = items.reduce((acc: number, item: any) => acc + (Number(item.amount) || 0), 0);
+  const adjustAmount = Number(reqData.adjustAmount ?? existing?.adjustAmount ?? 0);
+
+  const subtotal = reqData.subtotal !== undefined
+    ? Number(reqData.subtotal)
+    : (hasNewItems || itemsSubtotal > 0
+        ? Number((itemsSubtotal + adjustAmount).toFixed(2))
+        : (existing?.subtotal !== undefined ? Number(existing.subtotal) : Number(reqData.totalAmount || existing?.totalAmount || 0)));
+
+  const cgst = Number(reqData.cgst ?? (existing?.cgst !== undefined && !hasNewItems ? existing.cgst : (subtotal * 0.025).toFixed(2)));
+  const sgst = Number(reqData.sgst ?? (existing?.sgst !== undefined && !hasNewItems ? existing.sgst : (subtotal * 0.025).toFixed(2)));
+  const totalTax = Number(reqData.totalTax ?? (existing?.totalTax !== undefined && !hasNewItems ? existing.totalTax : (cgst + sgst).toFixed(2)));
+  
+  const totalAmount = reqData.totalAmount !== undefined
+    ? Number(reqData.totalAmount)
+    : (existing?.totalAmount !== undefined && !hasNewItems && Number(existing.totalAmount) > 0
+        ? Number(existing.totalAmount)
+        : Number((subtotal + totalTax).toFixed(2)));
+
+  const paidAmount = Number(reqData.paidAmount ?? existing?.paidAmount ?? 0);
+  const pendingAmount = Number(reqData.pendingAmount ?? (totalAmount - paidAmount).toFixed(2));
+
+  let status = reqData.status || existing?.status || 'Pending';
+  if (paidAmount >= totalAmount && totalAmount > 0) status = 'Paid';
+  else if (paidAmount > 0) status = 'Partial';
+  else if (reqData.paymentStatus === 'Paid' || reqData.paymentStatus === 'Received') status = 'Paid';
+
+  const updatedPurchase = {
+    ...(existing || {}),
+    ...reqData,
+    id: existing?.id || cleanId || rawId,
+    purchaseNo: reqData.purchaseNo || existing?.purchaseNo || `PUR-${Date.now()}`,
+    subtotal,
+    cgst,
+    sgst,
+    totalTax,
+    totalAmount,
+    paidAmount,
+    pendingAmount,
+    status,
+    date: reqData.date || existing?.date || new Date().toISOString().split('T')[0],
+    materialName: reqData.materialName || existing?.materialName || (items[0]?.description) || 'Material',
+  };
+
+  if (index !== -1) {
+    memoryStore.purchases[index] = updatedPurchase;
+  } else {
+    memoryStore.purchases.unshift(updatedPurchase);
+  }
   saveToLocalBackup();
+
   if (isDbConnected()) {
     try {
-      const isObjectId = mongoose.Types.ObjectId.isValid(id);
-      const filterConditions: any[] = [{ id }, { purchaseNo: id }];
-      if (isObjectId) filterConditions.push({ _id: id });
+      const filterConditions: any[] = [
+        { id: updatedPurchase.id },
+        { id: rawId },
+        { id: cleanId },
+        { purchaseNo: updatedPurchase.purchaseNo },
+        { purchaseNo: rawId },
+      ];
+      if (mongoose.Types.ObjectId.isValid(rawId)) filterConditions.push({ _id: rawId });
+      if (mongoose.Types.ObjectId.isValid(cleanId)) filterConditions.push({ _id: cleanId });
+
+      await PurchaseModel.findOneAndUpdate(
+        { $or: filterConditions },
+        { $set: cleanForMongo(updatedPurchase) },
+        { upsert: true, new: true }
+      );
+      console.log('Updated purchase/material in MongoDB Atlas:', rawId, updatedPurchase.purchaseNo);
+    } catch (err: any) {
+      console.error('MongoDB Purchase update error:', err.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Material purchase updated successfully',
+    purchase: updatedPurchase,
+    material: updatedPurchase,
+    data: updatedPurchase,
+    id: updatedPurchase.id,
+    ...updatedPurchase,
+  });
+};
+
+app.put(materialPurchaseIdRoutes, handleMaterialUpdate);
+app.post(materialPurchaseIdRoutes, handleMaterialUpdate);
+
+// DELETE (Supports DELETE and POST on materialPurchaseDeleteRoutes)
+const handleMaterialDelete = async (req: Request, res: Response) => {
+  const rawId = req.params.id;
+  const cleanId = rawId.replace(/_\d{4}-\d{2}$/, '');
+
+  memoryStore.purchases = memoryStore.purchases.filter(
+    p => p.id !== rawId && p.id !== cleanId && (p as any)._id !== rawId && (p as any)._id !== cleanId && p.purchaseNo !== rawId && p.purchaseNo !== cleanId
+  );
+  saveToLocalBackup();
+
+  let deletedCount = 0;
+  await ensureDbConnected();
+  if (isDbConnected()) {
+    try {
+      const filterConditions: any[] = [{ id: rawId }, { id: cleanId }, { purchaseNo: rawId }, { purchaseNo: cleanId }];
+      if (mongoose.Types.ObjectId.isValid(rawId)) filterConditions.push({ _id: rawId });
+      if (mongoose.Types.ObjectId.isValid(cleanId)) filterConditions.push({ _id: cleanId });
 
       const result = await PurchaseModel.deleteMany({ $or: filterConditions });
-      console.log(`Deleted ${result.deletedCount} purchase(s) from MongoDB Atlas:`, id);
+      deletedCount = result.deletedCount || 0;
+      console.log(`Deleted ${deletedCount} purchase/material entry from MongoDB Atlas:`, rawId);
     } catch (err: any) {
       console.error('MongoDB Purchase delete error:', err.message);
     }
   }
-  res.json({ success: true, id });
-});
+  res.json({ success: true, message: 'Material purchase deleted successfully', id: rawId, deletedCount });
+};
+
+app.delete(materialPurchaseDeleteRoutes, handleMaterialDelete);
+app.post(materialPurchaseDeleteRoutes, handleMaterialDelete);
 
 // 5. Worker Salary (Karigar Pagar)
 app.get('/api/workers', async (req: Request, res: Response) => {
@@ -928,31 +1271,58 @@ app.post('/api/parties', async (req: Request, res: Response) => {
 
 app.put('/api/parties/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const index = memoryStore.parties.findIndex(p => p.id === id);
-  if (index !== -1) {
-    const updated = { ...memoryStore.parties[index], ...req.body };
-    memoryStore.parties[index] = updated;
-    saveToLocalBackup();
+  await ensureDbConnected();
 
-    if (isDbConnected()) {
-      try {
-        await PartyModel.updateOne({ id }, { $set: cleanForMongo(updated) }, { upsert: true });
-        console.log('Updated party in MongoDB Atlas:', id);
-      } catch (err: any) {
-        console.error('MongoDB Party update error:', err.message);
-      }
+  let index = memoryStore.parties.findIndex(p => p.id === id || (p as any)._id === id);
+  let existing = index !== -1 ? memoryStore.parties[index] : null;
+
+  if (!existing && isDbConnected()) {
+    try {
+      const isObjectId = mongoose.Types.ObjectId.isValid(id);
+      const filter = isObjectId ? { $or: [{ id }, { _id: id }] } : { id };
+      const doc = await PartyModel.findOne(filter).lean();
+      if (doc) existing = cleanForMongo(doc);
+    } catch (e: any) {
+      console.warn('Error fetching party from Mongo on PUT:', e.message);
     }
-
-    res.json({ success: true, party: memoryStore.parties[index] });
-  } else {
-    res.status(404).json({ error: 'Party not found' });
   }
+
+  const updated = { ...(existing || {}), ...req.body, id: existing?.id || req.body.id || id };
+
+  if (index !== -1) {
+    memoryStore.parties[index] = updated;
+  } else {
+    memoryStore.parties.unshift(updated);
+  }
+  saveToLocalBackup();
+
+  if (isDbConnected()) {
+    try {
+      const isObjectId = mongoose.Types.ObjectId.isValid(id);
+      const filterConditions: any[] = [{ id: updated.id }, { id }];
+      if (isObjectId) filterConditions.push({ _id: id });
+
+      await PartyModel.findOneAndUpdate(
+        { $or: filterConditions },
+        { $set: cleanForMongo(updated) },
+        { upsert: true, new: true }
+      );
+      console.log('Updated party in MongoDB Atlas:', id, updated.name);
+    } catch (err: any) {
+      console.error('MongoDB Party update error:', err.message);
+    }
+  }
+
+  res.json({ success: true, party: updated });
 });
 
 app.delete('/api/parties/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  memoryStore.parties = memoryStore.parties.filter(p => p.id !== id);
+  memoryStore.parties = memoryStore.parties.filter(p => p.id !== id && (p as any)._id !== id);
   saveToLocalBackup();
+
+  let deletedCount = 0;
+  await ensureDbConnected();
   if (isDbConnected()) {
     try {
       const isObjectId = mongoose.Types.ObjectId.isValid(id);
@@ -960,12 +1330,13 @@ app.delete('/api/parties/:id', async (req: Request, res: Response) => {
       if (isObjectId) filterConditions.push({ _id: id });
 
       const result = await PartyModel.deleteMany({ $or: filterConditions });
-      console.log(`Deleted ${result.deletedCount} party/parties from MongoDB Atlas:`, id);
+      deletedCount = result.deletedCount || 0;
+      console.log(`Deleted ${deletedCount} party/parties from MongoDB Atlas:`, id);
     } catch (err: any) {
       console.error('MongoDB Party delete error:', err.message);
     }
   }
-  res.json({ success: true, id });
+  res.json({ success: true, id, deletedCount });
 });
 
 // 7. Payment Management
@@ -1033,6 +1404,119 @@ app.delete('/api/payments/:id', async (req: Request, res: Response) => {
       console.log(`Deleted ${result.deletedCount} payment(s) from MongoDB Atlas:`, id);
     } catch (err: any) {
       console.error('MongoDB Payment delete error:', err.message);
+    }
+  }
+  res.json({ success: true, id });
+});
+
+app.put('/api/payments/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const payment = req.body;
+  const updatedPayment = { ...payment, id };
+  memoryStore.payments = memoryStore.payments.map((p) => (p.id === id ? updatedPayment : p));
+  saveToLocalBackup();
+
+  await ensureDbConnected();
+  if (isDbConnected()) {
+    try {
+      await PaymentModel.updateOne({ id }, { $set: cleanForMongo(updatedPayment) }, { upsert: true });
+    } catch (err: any) {
+      console.error('MongoDB Payment update error:', err.message);
+    }
+  }
+
+  res.json({ success: true, payment: updatedPayment });
+});
+
+// 7B. Transaction Category Management (CRUD)
+app.get('/api/categories', async (req: Request, res: Response) => {
+  const isConnected = await ensureDbConnected();
+  if (isConnected) {
+    try {
+      const docs = await CategoryModel.find().lean();
+      if (docs && Array.isArray(docs)) {
+        const mongoCategories = docs.map(cleanForMongo);
+        const mongoIds = new Set(mongoCategories.map((c: any) => c.id));
+        const memoryOnly = (memoryStore.categories || []).filter((c: any) => c.id && !mongoIds.has(c.id));
+
+        for (const mCategory of memoryOnly) {
+          CategoryModel.findOneAndUpdate(
+            { id: mCategory.id },
+            { $set: cleanForMongo(mCategory) },
+            { upsert: true }
+          ).catch((e: any) => console.warn('Error syncing memory category to Mongo:', e.message));
+        }
+
+        memoryStore.categories = [...memoryOnly, ...mongoCategories];
+        saveToLocalBackup();
+      }
+    } catch (e: any) {
+      console.warn('Error reading categories from MongoDB:', e.message);
+    }
+  }
+  res.json(memoryStore.categories || []);
+});
+
+app.post('/api/categories', async (req: Request, res: Response) => {
+  const category = req.body;
+  const newCategory = {
+    ...category,
+    id: category.id || 'cat_' + Date.now(),
+    createdAt: category.createdAt || new Date().toISOString().split('T')[0],
+  };
+  if (!memoryStore.categories) memoryStore.categories = [];
+  memoryStore.categories.push(newCategory);
+  saveToLocalBackup();
+
+  await ensureDbConnected();
+  if (isDbConnected()) {
+    try {
+      await CategoryModel.updateOne({ id: newCategory.id }, { $set: cleanForMongo(newCategory) }, { upsert: true });
+    } catch (err: any) {
+      console.error('MongoDB Category save error:', err.message);
+    }
+  }
+
+  res.json({ success: true, category: newCategory });
+});
+
+app.put('/api/categories/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const category = req.body;
+  const updatedCategory = { ...category, id };
+
+  if (!memoryStore.categories) memoryStore.categories = [];
+  memoryStore.categories = memoryStore.categories.map((c: any) => (c.id === id ? updatedCategory : c));
+  saveToLocalBackup();
+
+  await ensureDbConnected();
+  if (isDbConnected()) {
+    try {
+      await CategoryModel.updateOne({ id }, { $set: cleanForMongo(updatedCategory) }, { upsert: true });
+    } catch (err: any) {
+      console.error('MongoDB Category update error:', err.message);
+    }
+  }
+
+  res.json({ success: true, category: updatedCategory });
+});
+
+app.delete('/api/categories/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  if (!memoryStore.categories) memoryStore.categories = [];
+  memoryStore.categories = memoryStore.categories.filter((c: any) => c.id !== id);
+  saveToLocalBackup();
+
+  if (isDbConnected()) {
+    try {
+      const isObjectId = mongoose.Types.ObjectId.isValid(id);
+      const filterConditions: any[] = [{ id }];
+      if (isObjectId) filterConditions.push({ _id: id });
+
+      const result = await CategoryModel.deleteMany({ $or: filterConditions });
+      console.log(`Deleted ${result.deletedCount} category(ies) from MongoDB:`, id);
+    } catch (err: any) {
+      console.error('MongoDB Category delete error:', err.message);
     }
   }
   res.json({ success: true, id });
@@ -1459,6 +1943,11 @@ app.put('/api/settings', async (req: Request, res: Response) => {
     }
   }
   res.json({ success: true, settings: memoryStore.settings });
+});
+
+// Explicit 404 JSON handler for unhandled /api routes (prevents Vite returning HTML for API calls)
+app.use('/api', (req: Request, res: Response) => {
+  res.status(404).json({ success: false, error: `API route ${req.method} ${req.originalUrl} not found` });
 });
 
 // Global Express Error Handler

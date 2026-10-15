@@ -1,3 +1,13 @@
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Search as SearchIcon,
+  PhoneAndroid as PhoneIcon,
+  Person as PersonIcon,
+  Refresh as RefreshIcon,
+  Key as KeyIcon,
+} from '@mui/icons-material';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -24,14 +34,14 @@ import {
   Paper,
   InputAdornment,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import SearchIcon from '@mui/icons-material/Search';
-import PhoneIcon from '@mui/icons-material/PhoneAndroid';
-import PersonIcon from '@mui/icons-material/Person';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import KeyIcon from '@mui/icons-material/Key';
+
+
+
+
+
+
+
+
 import { AppUser } from '../types';
 import { formatDate } from '../utils/formatters';
 import { apiClient } from '../utils/api';
@@ -181,9 +191,9 @@ export const AppUsersPage: React.FC = () => {
           p: { xs: 2.5, sm: 3.5 },
           mb: 3,
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)',
           color: '#ffffff',
-          boxShadow: '0 10px 25px -5px rgba(49, 46, 129, 0.4)',
+          boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.35)',
         }}
       >
         <Box
@@ -211,13 +221,13 @@ export const AppUsersPage: React.FC = () => {
               <Chip
                 label="મોબાઈલ એપ્લિકેશન યુઝર્સ"
                 size="small"
-                sx={{ bgcolor: '#a5b4fc', color: '#1e1b4b', fontWeight: 800, fontSize: '0.75rem' }}
+                sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: '#ffffff', fontWeight: 800, fontSize: '0.75rem', backdropFilter: 'blur(4px)' }}
               />
             </Box>
             <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 0.8, fontSize: { xs: '1.4rem', sm: '1.9rem' } }}>
               App User Management (એપ યુઝર મેનેજમેન્ટ)
             </Typography>
-            <Typography variant="body2" sx={{ color: '#e0e7ff', maxWidth: '750px', lineHeight: 1.6 }}>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.88)', maxWidth: '750px', lineHeight: 1.6 }}>
               એપ યુઝર્સનું સંચાલન કરો. નવો યુઝર ઉમેરો અથવા જરૂરિયાત મુજબ યુઝર એકાઉન્ટ ડિલીટ કરો.
             </Typography>
           </Box>

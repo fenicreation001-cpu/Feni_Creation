@@ -1,3 +1,17 @@
+import {
+  FileDownload as ExcelIcon,
+  PictureAsPdf as PdfIcon,
+  CalendarMonth as CalendarIcon,
+  ReceiptLong as InvoiceIcon,
+  ShoppingCart as PurchaseIcon,
+  Badge as WorkerIcon,
+  TrendingUp as ProfitIcon,
+  Visibility as ViewIcon,
+  Close as CloseIcon,
+  Print as PrintIcon,
+  Refresh as RefreshIcon,
+  AccountBalanceWallet as WalletIcon,
+} from '@mui/icons-material';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Box,
@@ -27,18 +41,18 @@ import {
   Divider,
   Tooltip,
 } from '@mui/material';
-import ExcelIcon from '@mui/icons-material/FileDownload';
-import PdfIcon from '@mui/icons-material/PictureAsPdf';
-import CalendarIcon from '@mui/icons-material/CalendarMonth';
-import InvoiceIcon from '@mui/icons-material/ReceiptLong';
-import PurchaseIcon from '@mui/icons-material/ShoppingCart';
-import WorkerIcon from '@mui/icons-material/Badge';
-import ProfitIcon from '@mui/icons-material/TrendingUp';
-import ViewIcon from '@mui/icons-material/Visibility';
-import CloseIcon from '@mui/icons-material/Close';
-import PrintIcon from '@mui/icons-material/Print';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import WalletIcon from '@mui/icons-material/AccountBalanceWallet';
+
+
+
+
+
+
+
+
+
+
+
+
 import { Bill, Purchase, Worker } from '../types';
 import { formatRupees, formatDate } from '../utils/formatters';
 import { apiClient } from '../utils/api';
@@ -47,6 +61,8 @@ import html2pdf from 'html2pdf.js';
 import { useNotification } from '../context/NotificationContext';
 import { useThemeContext } from '../context/ThemeContext';
 import { useCompany } from '../context/CompanyContext';
+import { useMonthFilter, extractYearMonth } from '../context/MonthFilterContext';
+import { MonthMultiSelectDropdown } from '../components/MonthMultiSelectDropdown';
 
 const MONTH_NAMES_EN: Record<string, string> = {
   '01': 'January',
@@ -124,7 +140,8 @@ export const MonthWiseReportPage: React.FC = () => {
   const pdfContainerRef = useRef<HTMLDivElement>(null);
 
   const { showNotification } = useNotification();
-  const { language } = useThemeContext();
+  const { language, mode } = useThemeContext();
+  const { selectedMonths, monthFilter, setSelectedMonths, setSelectedMonth, toggleMonth, getMonthLabel } = useMonthFilter();
   const { settings } = useCompany();
   const isGu = language === 'gu';
 
@@ -159,15 +176,33 @@ export const MonthWiseReportPage: React.FC = () => {
     yearsSet.add('2025');
 
     bills.forEach((b) => {
-      const d = b.date || b.createdAt;
-      if (d && d.length >= 4) yearsSet.add(d.substring(0, 4));
+      const d = b.date || b.invoiceDate || (b.items && b.items[0]?.challanDate) || b.createdAt;
+      const ym = extractYearMonth(d);
+      if (ym && ym.length >= 4) {
+        const y = ym.substring(0, 4);
+        if (parseInt(y, 10) >= 2000) yearsSet.add(y);
+      }
     });
     purchases.forEach((p) => {
-      const d = p.date || p.createdAt;
-      if (d && d.length >= 4) yearsSet.add(d.substring(0, 4));
+      const d = p.date || (p.items && p.items[0]?.challanDate) || p.createdAt;
+      const ym = extractYearMonth(d);
+      if (ym && ym.length >= 4) {
+        const y = ym.substring(0, 4);
+        if (parseInt(y, 10) >= 2000) yearsSet.add(y);
+      }
     });
     return Array.from(yearsSet).sort().reverse();
   }, [bills, purchases]);
+
+  const monthRecordCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    bills.forEach((b) => {
+      const d = b.date || b.invoiceDate || (b.items && b.items[0]?.challanDate) || b.createdAt;
+      const ym = extractYearMonth(d);
+      if (ym) counts[ym] = (counts[ym] || 0) + 1;
+    });
+    return counts;
+  }, [bills]);
 
   // Compute Month-Wise Summary List
   const monthSummaries = useMemo<MonthSummaryData[]>(() => {
@@ -214,9 +249,9 @@ export const MonthWiseReportPage: React.FC = () => {
 
     // 1. Process Bills
     bills.forEach((b) => {
-      const dateStr = b.date || b.createdAt || '';
-      if (!dateStr || dateStr.length < 7) return;
-      const ym = dateStr.substring(0, 7); // YYYY-MM
+      const d = b.date || b.invoiceDate || (b.items && b.items[0]?.challanDate) || b.createdAt;
+      const ym = extractYearMonth(d);
+      if (!ym) return;
       const node = getOrInit(ym);
 
       node.invoiceCount += 1;
@@ -230,9 +265,12 @@ export const MonthWiseReportPage: React.FC = () => {
 
     // 2. Process Purchases
     purchases.forEach((p) => {
-      const dateStr = p.date || p.createdAt || '';
-      if (!dateStr || dateStr.length < 7) return;
-      const ym = dateStr.substring(0, 7); // YYYY-MM
+      let d = p.date || (p.items && p.items[0]?.challanDate) || p.createdAt;
+      if (typeof d === 'string' && (d.startsWith('0026') || d.startsWith('0006'))) {
+        d = '2026' + d.substring(4);
+      }
+      const ym = extractYearMonth(d);
+      if (!ym) return;
       const node = getOrInit(ym);
 
       node.purchaseCount += 1;
@@ -244,8 +282,8 @@ export const MonthWiseReportPage: React.FC = () => {
       node.purchasesList.push(p);
     });
 
-    // 3. Ensure all 12 months for selectedYear exist in map
-    if (selectedYear !== 'ALL') {
+    // 3. Ensure all 12 months for selectedYear exist in map if not filtering specific months
+    if (selectedYear !== 'ALL' && selectedMonths.length === 0 && (!monthFilter || monthFilter === 'ALL' || monthFilter === 'All')) {
       for (let m = 1; m <= 12; m++) {
         const mStr = m < 10 ? `0${m}` : `${m}`;
         const ym = `${selectedYear}-${mStr}`;
@@ -254,7 +292,6 @@ export const MonthWiseReportPage: React.FC = () => {
     }
 
     // 4. Process Worker Advances / Salary per month
-    // Iterate over each month node
     map.forEach((node, ym) => {
       let monthAdvTotal = 0;
       let monthPayableTotal = 0;
@@ -263,14 +300,12 @@ export const MonthWiseReportPage: React.FC = () => {
       const wList: { worker: Worker; monthAdvances: number; monthPayable: number }[] = [];
 
       workers.forEach((w) => {
-        // Calculate advances taken specifically in this month
         let advInMonth = 0;
         if (w.advances && Array.isArray(w.advances) && w.advances.length > 0) {
           advInMonth = w.advances
             .filter((a) => a.date && a.date.startsWith(ym))
             .reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
         } else if (w.advancePaid > 0) {
-          // If no array but total advance is recorded, check if worker joined in this month or default
           if (w.joiningDate && w.joiningDate.startsWith(ym)) {
             advInMonth = w.advancePaid;
           }
@@ -297,20 +332,26 @@ export const MonthWiseReportPage: React.FC = () => {
       node.workerNetPayable = monthPayableTotal;
       node.workersList = wList;
 
-      // Operating Profit = Total Sales Revenue - Material Purchase Cost - Worker Expenses (Advances Paid or Fixed Salary)
       node.netOperatingProfit = node.invoiceTotal - node.purchaseTotal - node.workerAdvancesPaid;
     });
 
-    // Convert map to array and sort descending by yearMonth
+    // Convert map to array and apply year / multi-month filtering
     let list = Array.from(map.values());
 
     if (selectedYear !== 'ALL') {
       list = list.filter((item) => item.year === selectedYear);
     }
 
+    // Apply Multi-Select Months filter if active
+    if (selectedMonths.length > 0) {
+      list = list.filter((item) => selectedMonths.includes(item.yearMonth));
+    } else if (monthFilter && monthFilter !== 'ALL' && monthFilter !== 'All' && monthFilter !== 'MULTI') {
+      list = list.filter((item) => item.yearMonth === monthFilter);
+    }
+
     list.sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
     return list;
-  }, [bills, purchases, workers, selectedYear]);
+  }, [bills, purchases, workers, selectedYear, selectedMonths, monthFilter]);
 
   // Yearly Summary Totals
   const yearlyOverall = useMemo(() => {
@@ -477,37 +518,51 @@ export const MonthWiseReportPage: React.FC = () => {
         </Box>
 
         {/* Action Controls */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 1.5 }}>
           {/* Year Selector */}
-          <TextField
-            select
-            size="small"
-            label={isGu ? 'વર્ષ પસંદ કરો' : 'Select Year'}
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            sx={{
-              minWidth: 140,
-              bgcolor: '#ffffff',
-              borderRadius: '8px',
-              '& .MuiOutlinedInput-root': {
-                fontWeight: 700,
-              },
-            }}
-          >
-            <MenuItem value="ALL">{isGu ? 'તમામ વર્ષો (All Years)' : 'All Years'}</MenuItem>
-            {availableYears.map((y) => (
-              <MenuItem key={y} value={y}>
-                {y}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: mode === 'dark' ? '#94a3b8' : '#64748b', mb: 0.6 }}>
+              {isGu ? 'વર્ષ' : 'Year'}
+            </Typography>
+            <TextField
+              select
+              size="small"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              sx={{
+                minWidth: 120,
+                bgcolor: mode === 'dark' ? '#0f172a' : '#ffffff',
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-root': {
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                },
+              }}
+            >
+              <MenuItem value="ALL">{isGu ? 'તમામ વર્ષો (All)' : 'All Years'}</MenuItem>
+              {availableYears.map((y) => (
+                <MenuItem key={y} value={y}>
+                  {y}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          {/* Multi-Select Month Filter */}
+          <Box sx={{ minWidth: 200, maxWidth: 260 }}>
+            <MonthMultiSelectDropdown
+              label={isGu ? 'મહિના મુજબ ફિલ્ટર' : 'Filter by Month'}
+              monthRecordCounts={monthRecordCounts}
+              fullWidth
+            />
+          </Box>
 
           <Button
             variant="outlined"
             color="primary"
             startIcon={<RefreshIcon />}
             onClick={fetchData}
-            sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none' }}
+            sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none', height: 40 }}
           >
             {isGu ? 'રીફ્રેશ' : 'Refresh'}
           </Button>
@@ -517,7 +572,7 @@ export const MonthWiseReportPage: React.FC = () => {
             color="success"
             startIcon={<ExcelIcon />}
             onClick={handleExportExcel}
-            sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none' }}
+            sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none', height: 40 }}
           >
             {isGu ? 'એક્સપોર્ટ એક્સેલ' : 'Export Excel'}
           </Button>
@@ -533,6 +588,7 @@ export const MonthWiseReportPage: React.FC = () => {
               borderRadius: '8px',
               textTransform: 'none',
               bgcolor: '#1e293b',
+              height: 40,
               '&:hover': { bgcolor: '#0f172a' },
               boxShadow: '0 4px 12px rgba(30, 41, 59, 0.3)',
             }}
@@ -542,6 +598,50 @@ export const MonthWiseReportPage: React.FC = () => {
         </Box>
       </Box>
 
+      {/* Active Month Filter Chip Banner if filtered */}
+      {(selectedMonths.length > 0 || (monthFilter && monthFilter !== 'ALL' && monthFilter !== 'All')) && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5, flexWrap: 'wrap' }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+            {isGu ? 'સક્રિય મહિના:' : 'Active Month Filter:'}
+          </Typography>
+          {selectedMonths.length > 0 ? (
+            selectedMonths.map((ym) => (
+              <Chip
+                key={ym}
+                size="small"
+                label={getMonthLabel(ym, language)}
+                onDelete={() => toggleMonth(ym)}
+                color="primary"
+                variant="outlined"
+                sx={{ borderRadius: '8px', fontWeight: 700 }}
+              />
+            ))
+          ) : (
+            monthFilter !== 'ALL' && monthFilter !== 'All' && (
+              <Chip
+                size="small"
+                label={getMonthLabel(monthFilter, language)}
+                onDelete={() => setSelectedMonth('ALL')}
+                color="primary"
+                variant="outlined"
+                sx={{ borderRadius: '8px', fontWeight: 700 }}
+              />
+            )
+          )}
+          <Button
+            size="small"
+            color="error"
+            onClick={() => {
+              setSelectedMonth('ALL');
+              setSelectedMonths([]);
+            }}
+            sx={{ fontSize: '0.75rem', textTransform: 'none', fontWeight: 700, py: 0.2 }}
+          >
+            {isGu ? 'બધા મહિના બતાવો' : 'Show All Months'}
+          </Button>
+        </Box>
+      )}
+
       {/* KPI Overview Summary Cards Grid */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2.5, mb: 3.5 }}>
         {/* Total Invoices (Sales) Card */}
@@ -550,27 +650,27 @@ export const MonthWiseReportPage: React.FC = () => {
             elevation={0}
             sx={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+              bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
               p: 2,
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              boxShadow: mode === 'dark' ? '0 4px 14px rgba(0,0,0,0.3)' : '0 4px 14px rgba(0,0,0,0.03)',
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#2563eb', fontFamily: fontStack }}>
                 {isGu ? 'કુલ ઇનવોઇસ (વેચાણ)' : 'TOTAL INVOICES (SALES)'}
               </Typography>
-              <Box sx={{ bgcolor: '#eff6ff', color: '#2563eb', p: 1, borderRadius: '10px' }}>
+              <Box sx={{ bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff', color: '#2563eb', p: 1, borderRadius: '10px' }}>
                 <InvoiceIcon fontSize="small" />
               </Box>
             </Box>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', mb: 1 }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: mode === 'dark' ? '#f8fafc' : '#0f172a', mb: 1 }}>
               {formatRupees(yearlyOverall.totalInvoicesAmount)}
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px dashed #e2e8f0' }}>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: `1px dashed ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}` }}>
+              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 700 }}>
                 {isGu ? 'ઇનવોઇસ સંખ્યા:' : 'Total Bills:'} <strong>{yearlyOverall.totalInvoicesCount}</strong>
               </Typography>
               <Typography variant="caption" sx={{ color: '#16a34a', fontWeight: 800 }}>
@@ -586,27 +686,27 @@ export const MonthWiseReportPage: React.FC = () => {
             elevation={0}
             sx={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+              bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
               p: 2,
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              boxShadow: mode === 'dark' ? '0 4px 14px rgba(0,0,0,0.3)' : '0 4px 14px rgba(0,0,0,0.03)',
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#7c3aed', fontFamily: fontStack }}>
                 {isGu ? 'કુલ મટીરીયલ ખરીદી' : 'TOTAL MATERIAL PURCHASE'}
               </Typography>
-              <Box sx={{ bgcolor: '#f5f3ff', color: '#7c3aed', p: 1, borderRadius: '10px' }}>
+              <Box sx={{ bgcolor: mode === 'dark' ? 'rgba(124, 58, 237, 0.15)' : '#f5f3ff', color: '#7c3aed', p: 1, borderRadius: '10px' }}>
                 <PurchaseIcon fontSize="small" />
               </Box>
             </Box>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', mb: 1 }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: mode === 'dark' ? '#f8fafc' : '#0f172a', mb: 1 }}>
               {formatRupees(yearlyOverall.totalPurchasesAmount)}
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px dashed #e2e8f0' }}>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: `1px dashed ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}` }}>
+              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 700 }}>
                 {isGu ? 'ખરીદી ચલણ:' : 'Purchases:'} <strong>{yearlyOverall.totalPurchasesCount}</strong>
               </Typography>
               <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 800 }}>
@@ -622,26 +722,26 @@ export const MonthWiseReportPage: React.FC = () => {
             elevation={0}
             sx={{
               borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+              bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
               p: 2,
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              boxShadow: mode === 'dark' ? '0 4px 14px rgba(0,0,0,0.3)' : '0 4px 14px rgba(0,0,0,0.03)',
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#ea580c', fontFamily: fontStack }}>
                 {isGu ? 'કારીગર ઉપાડ / પગાર' : 'WORKER SALARY & UPAD'}
               </Typography>
-              <Box sx={{ bgcolor: '#fff7ed', color: '#ea580c', p: 1, borderRadius: '10px' }}>
+              <Box sx={{ bgcolor: mode === 'dark' ? 'rgba(234, 88, 12, 0.15)' : '#fff7ed', color: '#ea580c', p: 1, borderRadius: '10px' }}>
                 <WorkerIcon fontSize="small" />
               </Box>
             </Box>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', mb: 1 }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: mode === 'dark' ? '#f8fafc' : '#0f172a', mb: 1 }}>
               {formatRupees(yearlyOverall.totalWorkerAdvances)}
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1, borderTop: '1px dashed #e2e8f0' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1, borderTop: `1px dashed ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}` }}>
               <Typography variant="caption" sx={{ color: '#2563eb', fontWeight: 800 }}>
                 {isGu ? 'ફિક્સ પગાર:' : 'Fixed Sal:'} {formatRupees(yearlyOverall.totalWorkerSalary)}
               </Typography>
@@ -655,12 +755,12 @@ export const MonthWiseReportPage: React.FC = () => {
             elevation={0}
             sx={{
               borderRadius: '16px',
-              border: `1px solid ${yearlyOverall.totalNetOperatingProfit >= 0 ? '#bbf7d0' : '#fecaca'}`,
-              bgcolor: yearlyOverall.totalNetOperatingProfit >= 0 ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${yearlyOverall.totalNetOperatingProfit >= 0 ? (mode === 'dark' ? '#065f46' : '#bbf7d0') : (mode === 'dark' ? '#991b1b' : '#fecaca')}`,
+              bgcolor: yearlyOverall.totalNetOperatingProfit >= 0 ? (mode === 'dark' ? 'rgba(6, 95, 70, 0.15)' : '#f0fdf4') : (mode === 'dark' ? 'rgba(153, 27, 27, 0.15)' : '#fef2f2'),
               p: 2,
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              boxShadow: mode === 'dark' ? '0 4px 14px rgba(0,0,0,0.3)' : '0 4px 14px rgba(0,0,0,0.03)',
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -676,7 +776,7 @@ export const MonthWiseReportPage: React.FC = () => {
               </Typography>
               <Box
                 sx={{
-                  bgcolor: yearlyOverall.totalNetOperatingProfit >= 0 ? '#dcfce7' : '#fee2e2',
+                  bgcolor: yearlyOverall.totalNetOperatingProfit >= 0 ? (mode === 'dark' ? 'rgba(21, 128, 61, 0.25)' : '#dcfce7') : (mode === 'dark' ? 'rgba(185, 28, 28, 0.25)' : '#fee2e2'),
                   color: yearlyOverall.totalNetOperatingProfit >= 0 ? '#15803d' : '#b91c1c',
                   p: 1,
                   borderRadius: '10px',
@@ -695,8 +795,8 @@ export const MonthWiseReportPage: React.FC = () => {
             >
               {formatRupees(yearlyOverall.totalNetOperatingProfit)}
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px dashed #cbd5e1' }}>
-              <Typography variant="caption" sx={{ color: '#475569', fontWeight: 700 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: `1px dashed ${mode === 'dark' ? '#334155' : '#cbd5e1'}` }}>
+              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#94a3b8' : '#475569', fontWeight: 700 }}>
                 {isGu ? 'ગણતરી:' : 'Formula:'} Sales - Purchase - Upad
               </Typography>
               <Chip
@@ -899,16 +999,18 @@ export const MonthWiseReportPage: React.FC = () => {
                         key={m.yearMonth}
                         hover
                         sx={{
-                          bgcolor: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
-                          '&:hover': { bgcolor: '#f1f5f9' },
+                          bgcolor: idx % 2 === 0
+                            ? (mode === 'dark' ? '#0f172a' : '#ffffff')
+                            : (mode === 'dark' ? '#111827' : '#f8fafc'),
+                          '&:hover': { bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9' },
                         }}
                       >
-                        <TableCell align="center" sx={{ fontWeight: 700, color: '#64748b' }}>
+                        <TableCell align="center" sx={{ fontWeight: 700, color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
                           {idx + 1}
                         </TableCell>
 
                         {/* Month & Year */}
-                        <TableCell align="left" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                        <TableCell align="left" sx={{ fontWeight: 800, color: mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <CalendarIcon fontSize="small" sx={{ color: '#3b82f6' }} />
                             <span>{isGu ? `${m.monthNameGu} ${m.year}` : `${m.monthNameEn} ${m.year}`}</span>
@@ -921,14 +1023,14 @@ export const MonthWiseReportPage: React.FC = () => {
                             label={m.invoiceCount}
                             size="small"
                             sx={{
-                              bgcolor: m.invoiceCount > 0 ? '#dbeafe' : '#f1f5f9',
-                              color: m.invoiceCount > 0 ? '#1d4ed8' : '#94a3b8',
+                              bgcolor: m.invoiceCount > 0 ? (mode === 'dark' ? 'rgba(37, 99, 235, 0.2)' : '#dbeafe') : (mode === 'dark' ? '#1e293b' : '#f1f5f9'),
+                              color: m.invoiceCount > 0 ? (mode === 'dark' ? '#60a5fa' : '#1d4ed8') : '#94a3b8',
                               fontWeight: 800,
                               minWidth: 32,
                             }}
                           />
                         </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                        <TableCell align="right" sx={{ fontWeight: 800, color: mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
                           {formatRupees(m.invoiceTotal)}
                         </TableCell>
 
@@ -938,19 +1040,19 @@ export const MonthWiseReportPage: React.FC = () => {
                             label={m.purchaseCount}
                             size="small"
                             sx={{
-                              bgcolor: m.purchaseCount > 0 ? '#f3e8ff' : '#f1f5f9',
-                              color: m.purchaseCount > 0 ? '#6b21a8' : '#94a3b8',
+                              bgcolor: m.purchaseCount > 0 ? (mode === 'dark' ? 'rgba(124, 58, 237, 0.2)' : '#f3e8ff') : (mode === 'dark' ? '#1e293b' : '#f1f5f9'),
+                              color: m.purchaseCount > 0 ? (mode === 'dark' ? '#c084fc' : '#6b21a8') : '#94a3b8',
                               fontWeight: 800,
                               minWidth: 32,
                             }}
                           />
                         </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                        <TableCell align="right" sx={{ fontWeight: 800, color: mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
                           {formatRupees(m.purchaseTotal)}
                         </TableCell>
 
                         {/* Worker Advances */}
-                        <TableCell align="right" sx={{ fontWeight: 700, color: '#c2410c' }}>
+                        <TableCell align="right" sx={{ fontWeight: 700, color: mode === 'dark' ? '#fb923c' : '#c2410c' }}>
                           {formatRupees(m.workerAdvancesPaid)}
                         </TableCell>
 

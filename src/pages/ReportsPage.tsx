@@ -1,3 +1,8 @@
+import {
+  FileDownload as ExcelIcon,
+  PictureAsPdf as PdfIcon,
+  CalendarMonth as CalendarIcon,
+} from '@mui/icons-material';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -14,9 +19,9 @@ import {
   MenuItem,
   TextField,
 } from '@mui/material';
-import ExcelIcon from '@mui/icons-material/FileDownload';
-import PdfIcon from '@mui/icons-material/PictureAsPdf';
-import CalendarIcon from '@mui/icons-material/CalendarMonth';
+
+
+
 import { Bill, Purchase, Worker } from '../types';
 import { formatRupees, formatDate } from '../utils/formatters';
 import { apiClient } from '../utils/api';
@@ -37,8 +42,14 @@ export const ReportsPage: React.FC = () => {
   const { language } = useThemeContext();
   const { selectedMonth, isDateInSelectedMonth, getMonthLabel } = useMonthFilter();
 
-  const filteredBills = bills.filter((b) => isDateInSelectedMonth(b.date || b.createdAt));
-  const filteredPurchases = purchases.filter((p) => isDateInSelectedMonth(p.date || p.createdAt));
+  const filteredBills = bills.filter((b) => {
+    const bDate = b.date || b.invoiceDate || (b.items && b.items.find((i) => i.challanDate)?.challanDate) || b.createdAt;
+    return Boolean(bDate && isDateInSelectedMonth(bDate));
+  });
+  const filteredPurchases = purchases.filter((p) => {
+    const pDate = p.date || (p.items && p.items.find((i) => i.challanDate)?.challanDate) || p.createdAt;
+    return Boolean(pDate && isDateInSelectedMonth(pDate));
+  });
 
   useEffect(() => {
     Promise.all([
@@ -201,7 +212,7 @@ export const ReportsPage: React.FC = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}>
-          <Button component={Link} to="/monthly-summary" variant="contained" startIcon={<CalendarIcon />} sx={{ fontWeight: 800, bgcolor: '#0f172a', color: '#ffffff', '&:hover': { bgcolor: '#1e293b' }, width: { xs: '100%', sm: 'auto' } }}>
+          <Button component={Link} to="/monthly-summary" variant="contained" startIcon={<CalendarIcon />} sx={{ fontWeight: 800, bgcolor: '#1e3a8a', color: '#ffffff', '&:hover': { bgcolor: '#1e40af' }, width: { xs: '100%', sm: 'auto' } }}>
             {language === 'gu' ? 'મહિનાવાર સમરી રિપોર્ટ ➔' : 'Month-Wise Summary ➔'}
           </Button>
           <Button variant="contained" color="success" startIcon={<ExcelIcon />} onClick={exportToExcel} sx={{ fontWeight: 700, width: { xs: '100%', sm: 'auto' } }}>

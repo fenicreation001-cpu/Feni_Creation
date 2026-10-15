@@ -18,14 +18,14 @@ const styles = StyleSheet.create({
     padding: 24,
     fontSize: 9,
     fontFamily: 'GujaratiFont',
-    color: '#0f172a',
+    color: '#000000',
     backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderBottomWidth: 2,
-    borderBottomColor: '#6366f1',
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#1e40af',
     borderBottomStyle: 'solid',
     paddingBottom: 10,
     marginBottom: 12,
@@ -33,22 +33,22 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#312e81',
+    color: '#0f172a',
   },
   tagline: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#4f46e5',
+    color: '#1d4ed8',
     marginTop: 2,
   },
   address: {
-    fontSize: 8,
-    color: '#64748b',
+    fontSize: 8.5,
+    color: '#1e293b',
     marginTop: 3,
   },
   contact: {
-    fontSize: 8,
-    color: '#64748b',
+    fontSize: 8.5,
+    color: '#1e293b',
     marginTop: 2,
   },
   headerRight: {
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   titleBadge: {
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#1e40af',
     borderRadius: 10,
     paddingVertical: 4,
     paddingHorizontal: 12,
@@ -70,11 +70,12 @@ const styles = StyleSheet.create({
   invoiceNo: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#1e1b4b',
+    color: '#090d16',
   },
   invoiceDate: {
     fontSize: 9,
-    color: '#64748b',
+    color: '#1e293b',
+    fontWeight: 'bold',
     marginTop: 2,
   },
   topGrid: {
@@ -86,8 +87,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
     backgroundColor: '#ffffff',
   },
   cardHeader: {
@@ -97,15 +98,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   cardTitle: {
-    fontSize: 8,
+    fontSize: 8.5,
     fontWeight: 'bold',
-    color: '#64748b',
+    color: '#1e293b',
     textTransform: 'uppercase',
   },
   partyName: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: '#090d16',
   },
   gstBadge: {
     backgroundColor: '#e0f2fe',
@@ -114,6 +115,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     marginTop: 4,
     alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
   },
   gstBadgeText: {
     color: '#0369a1',
@@ -122,7 +125,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 9,
-    color: '#475569',
+    color: '#0f172a',
     marginTop: 3,
   },
   infoGrid: {
@@ -135,50 +138,50 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
     padding: 6,
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
   },
   infoBoxLabel: {
-    fontSize: 7,
-    color: '#64748b',
+    fontSize: 7.5,
+    color: '#1e293b',
     fontWeight: 'bold',
   },
   infoBoxValue: {
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: '#090d16',
     marginTop: 2,
   },
   table: {
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
     borderRadius: 6,
     overflow: 'hidden',
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    backgroundColor: '#f1f5f9',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#cbd5e1',
     paddingVertical: 6,
     paddingHorizontal: 4,
   },
   th: {
-    fontSize: 7,
+    fontSize: 7.5,
     fontWeight: 'bold',
-    color: '#475569',
+    color: '#090d16',
   },
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#e2e8f0',
     paddingVertical: 5,
     paddingHorizontal: 4,
   },
   td: {
-    fontSize: 8,
-    color: '#0f172a',
+    fontSize: 8.5,
+    color: '#090d16',
   },
   designBadge: {
     backgroundColor: '#e0f2fe',
@@ -186,9 +189,11 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     paddingHorizontal: 4,
     marginRight: 4,
+    borderWidth: 1,
+    borderColor: '#7dd3fc',
   },
   designBadgeText: {
-    fontSize: 7,
+    fontSize: 7.5,
     color: '#0369a1',
     fontWeight: 'bold',
   },
@@ -200,16 +205,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
     justifyContent: 'flex-start',
   },
   totalsCard: {
     flex: 1.1,
     padding: 10,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
     justifyContent: 'space-between',
   },
   summaryRow: {
@@ -218,18 +223,19 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   summaryLabel: {
-    fontSize: 8,
-    color: '#475569',
+    fontSize: 8.5,
+    color: '#0f172a',
+    fontWeight: 'bold',
   },
   summaryValue: {
-    fontSize: 8,
+    fontSize: 8.5,
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: '#090d16',
   },
   netTotalBox: {
     backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderWidth: 1.5,
+    borderColor: '#3b82f6',
     borderRadius: 6,
     padding: 8,
     marginTop: 8,
@@ -238,12 +244,12 @@ const styles = StyleSheet.create({
   netTotalLabel: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#1d4ed8',
+    color: '#1e3a8a',
   },
   netTotalValue: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: '#1d4ed8',
+    color: '#1e3a8a',
   },
 });
 
@@ -382,37 +388,37 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
 
           <View style={{ marginTop: 6, gap: 3.5 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 8, color: '#64748b', width: 92, fontWeight: 'bold' }}>
+              <Text style={{ fontSize: 8, color: '#1e293b', width: 92, fontWeight: 'bold' }}>
                 {isGu ? 'સંપર્ક વ્યક્તિ:' : 'Contact Person:'}
               </Text>
-              <Text style={{ fontSize: 8.5, color: '#0f172a', fontWeight: 'bold', flex: 1 }}>
+              <Text style={{ fontSize: 8.5, color: '#090d16', fontWeight: 'bold', flex: 1 }}>
                 {displayContactPerson}
               </Text>
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 8, color: '#64748b', width: 92, fontWeight: 'bold' }}>
+              <Text style={{ fontSize: 8, color: '#1e293b', width: 92, fontWeight: 'bold' }}>
                 GSTIN Number:
               </Text>
-              <Text style={{ fontSize: 8.5, color: '#0f172a', fontWeight: 'bold', flex: 1 }}>
+              <Text style={{ fontSize: 8.5, color: '#090d16', fontWeight: 'bold', flex: 1 }}>
                 {displayGstin}
               </Text>
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 8, color: '#64748b', width: 92, fontWeight: 'bold' }}>
+              <Text style={{ fontSize: 8, color: '#1e293b', width: 92, fontWeight: 'bold' }}>
                 {isGu ? 'મોબાઇલ નંબર:' : 'Mobile Number:'}
               </Text>
-              <Text style={{ fontSize: 8.5, color: '#0f172a', flex: 1 }}>
+              <Text style={{ fontSize: 8.5, color: '#090d16', fontWeight: 'bold', flex: 1 }}>
                 {displayMobile}
               </Text>
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-              <Text style={{ fontSize: 8, color: '#64748b', width: 92, fontWeight: 'bold' }}>
+              <Text style={{ fontSize: 8, color: '#1e293b', width: 92, fontWeight: 'bold' }}>
                 {isGu ? 'સરનામું અને શહેર:' : 'Full Address & City:'}
               </Text>
-              <Text style={{ fontSize: 8.5, color: '#0f172a', flex: 1 }}>
+              <Text style={{ fontSize: 8.5, color: '#090d16', fontWeight: 'bold', flex: 1 }}>
                 {displayAddress}
               </Text>
             </View>
@@ -430,27 +436,27 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
           <View style={{ flexDirection: 'column', gap: 6 }}>
             {/* Row 1: Invoice No & Challan No */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <View style={{ width: '48.5%', backgroundColor: '#f8fafc', padding: 6, borderRadius: 6, borderWidth: 1, borderColor: '#f1f5f9' }}>
-                <Text style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold' }}>{isGu ? 'ઇનવોઇસ નં' : 'Invoice No'}</Text>
-                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#4f46e5', marginTop: 2 }}>{bill.invoiceNo || '-'}</Text>
+              <View style={{ width: '48.5%', backgroundColor: '#f8fafc', padding: 6, borderRadius: 6, borderWidth: 1.5, borderColor: '#e2e8f0' }}>
+                <Text style={{ fontSize: 7.5, color: '#1e293b', fontWeight: 'bold' }}>{isGu ? 'ઇનવોઇસ નં' : 'Invoice No'}</Text>
+                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1d4ed8', marginTop: 2 }}>{bill.invoiceNo || '-'}</Text>
               </View>
 
-              <View style={{ width: '48.5%', backgroundColor: '#f8fafc', padding: 6, borderRadius: 6, borderWidth: 1, borderColor: '#f1f5f9' }}>
-                <Text style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold' }}>{isGu ? 'ચલાણ નં' : 'Challan No'}</Text>
-                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#0f172a', marginTop: 2 }}>{bill.challanNo || '-'}</Text>
+              <View style={{ width: '48.5%', backgroundColor: '#f8fafc', padding: 6, borderRadius: 6, borderWidth: 1.5, borderColor: '#e2e8f0' }}>
+                <Text style={{ fontSize: 7.5, color: '#1e293b', fontWeight: 'bold' }}>{isGu ? 'ચલાણ નં' : 'Challan No'}</Text>
+                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#090d16', marginTop: 2 }}>{bill.challanNo || '-'}</Text>
               </View>
             </View>
 
             {/* Row 2: Invoice Date & Challan Date */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <View style={{ width: '48.5%', backgroundColor: '#f8fafc', padding: 6, borderRadius: 6, borderWidth: 1, borderColor: '#f1f5f9' }}>
-                <Text style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold' }}>{isGu ? 'ઇનવોઇસ તારીખ' : 'Invoice Date'}</Text>
-                <Text style={{ fontSize: 8.5, fontWeight: 'bold', color: '#334155', marginTop: 2 }}>{formatDate(bill.date)}</Text>
+              <View style={{ width: '48.5%', backgroundColor: '#f8fafc', padding: 6, borderRadius: 6, borderWidth: 1.5, borderColor: '#e2e8f0' }}>
+                <Text style={{ fontSize: 7.5, color: '#1e293b', fontWeight: 'bold' }}>{isGu ? 'ઇનવોઇસ તારીખ' : 'Invoice Date'}</Text>
+                <Text style={{ fontSize: 8.5, fontWeight: 'bold', color: '#090d16', marginTop: 2 }}>{formatDate(bill.date)}</Text>
               </View>
 
-              <View style={{ width: '48.5%', backgroundColor: '#f8fafc', padding: 6, borderRadius: 6, borderWidth: 1, borderColor: '#f1f5f9' }}>
-                <Text style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold' }}>{isGu ? 'ચલાણ તારીખ' : 'Challan Date'}</Text>
-                <Text style={{ fontSize: 8.5, fontWeight: 'bold', color: '#334155', marginTop: 2 }}>{formatDate(bill.dueDate || bill.date)}</Text>
+              <View style={{ width: '48.5%', backgroundColor: '#f8fafc', padding: 6, borderRadius: 6, borderWidth: 1.5, borderColor: '#e2e8f0' }}>
+                <Text style={{ fontSize: 7.5, color: '#1e293b', fontWeight: 'bold' }}>{isGu ? 'ચલાણ તારીખ' : 'Challan Date'}</Text>
+                <Text style={{ fontSize: 8.5, fontWeight: 'bold', color: '#090d16', marginTop: 2 }}>{formatDate(bill.dueDate || bill.date)}</Text>
               </View>
             </View>
           </View>
@@ -482,26 +488,26 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
           const rowTotal = Math.max(0, payableLot * rate - disc);
 
           return (
-            <View key={idx} style={[styles.tableRow, { backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }]}>
-              <Text style={[styles.td, { width: '3.5%', textAlign: 'center', color: '#64748b' }]}>{idx + 1}</Text>
-              <Text style={[styles.td, { width: '10.5%', textAlign: 'center', color: '#334155' }]}>{formatDate(item.challanDate || bill.dueDate || bill.date)}</Text>
-              <Text style={[styles.td, { width: '10%', textAlign: 'center', fontWeight: 'bold', color: '#4f46e5' }]}>{item.challanNo || bill.challanNo || '-'}</Text>
+            <View key={idx} style={[styles.tableRow, { backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }]}>
+              <Text style={[styles.td, { width: '3.5%', textAlign: 'center', color: '#090d16', fontWeight: 'bold' }]}>{idx + 1}</Text>
+              <Text style={[styles.td, { width: '10.5%', textAlign: 'center', color: '#090d16', fontWeight: 'bold' }]}>{formatDate(item.challanDate || bill.dueDate || bill.date)}</Text>
+              <Text style={[styles.td, { width: '10%', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }]}>{item.challanNo || bill.challanNo || '-'}</Text>
               <View style={{ width: '26%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                 {item.designNo ? (
                   <View style={styles.designBadge}>
                     <Text style={styles.designBadgeText}>{item.designNo}</Text>
                   </View>
                 ) : null}
-                <Text style={[styles.td, { fontWeight: 'bold', textAlign: 'center' }]}>{item.description || (isGu ? 'વસ્તુ' : 'Item')}</Text>
+                <Text style={[styles.td, { fontWeight: 'bold', textAlign: 'center', color: '#090d16' }]}>{item.description || (isGu ? 'વસ્તુ' : 'Item')}</Text>
               </View>
-              <Text style={[styles.td, { width: '6%', textAlign: 'center', fontWeight: 'bold' }]}>{lot}</Text>
-              <Text style={[styles.td, { width: '7%', textAlign: 'center' }]}>₹{rate}</Text>
-              <Text style={[styles.td, { width: '6.5%', textAlign: 'center', color: plain > 0 ? '#d97706' : '#94a3b8' }]}>{plain > 0 ? plain : '-'}</Text>
-              <Text style={[styles.td, { width: '6.5%', textAlign: 'center', color: short > 0 ? '#dc2626' : '#94a3b8' }]}>{short > 0 ? short : '-'}</Text>
-              <Text style={[styles.td, { width: '9.5%', textAlign: 'center', color: disc > 0 ? '#dc2626' : '#94a3b8' }]}>
+              <Text style={[styles.td, { width: '6%', textAlign: 'center', fontWeight: 'bold', color: '#090d16' }]}>{lot}</Text>
+              <Text style={[styles.td, { width: '7%', textAlign: 'center', fontWeight: 'bold', color: '#090d16' }]}>₹{rate}</Text>
+              <Text style={[styles.td, { width: '6.5%', textAlign: 'center', fontWeight: 'bold', color: plain > 0 ? '#b45309' : '#64748b' }]}>{plain > 0 ? plain : '-'}</Text>
+              <Text style={[styles.td, { width: '6.5%', textAlign: 'center', fontWeight: 'bold', color: short > 0 ? '#b91c1c' : '#64748b' }]}>{short > 0 ? short : '-'}</Text>
+              <Text style={[styles.td, { width: '9.5%', textAlign: 'center', fontWeight: 'bold', color: disc > 0 ? '#b91c1c' : '#64748b' }]}>
                 {disc > 0 ? `- ₹${disc.toLocaleString('en-IN')}` : '-'}
               </Text>
-              <Text style={[styles.td, { width: '14.5%', textAlign: 'center', fontWeight: 'bold', color: '#4f46e5' }]}>
+              <Text style={[styles.td, { width: '14.5%', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }]}>
                 ₹{rowTotal.toLocaleString('en-IN')}
               </Text>
             </View>
@@ -514,13 +520,13 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
         {/* Payment Card */}
         <View style={styles.paymentCard}>
           <View>
-            <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Text style={{ fontSize: 8.5, fontWeight: 'bold', color: '#1e293b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               {isGu ? 'ચૂકવણી વિગત અને પદ્ધતિ' : 'PAYMENT INFO & METHOD'}
             </Text>
 
             {/* Payment Status Row */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <Text style={{ fontSize: 8.5, color: '#475569', fontWeight: 'bold' }}>
+              <Text style={{ fontSize: 8.5, color: '#1e293b', fontWeight: 'bold' }}>
                 {isGu ? 'ચુકવણી સ્થિતિ:' : 'Payment Status:'}
               </Text>
               <View
@@ -529,13 +535,15 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
                   borderRadius: 8,
                   paddingHorizontal: 8,
                   paddingVertical: 2.5,
+                  borderWidth: 1,
+                  borderColor: isPaid ? '#86efac' : '#fca5a5',
                 }}
               >
                 <Text
                   style={{
                     fontSize: 8,
                     fontWeight: 'bold',
-                    color: isPaid ? '#15803d' : '#dc2626',
+                    color: isPaid ? '#15803d' : '#b91c1c',
                   }}
                 >
                   {isPaid ? (isGu ? 'મળેલ (Received)' : 'Received') : (isGu ? 'બાકી (Pending)' : 'Pending')}
@@ -546,7 +554,7 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
             {/* Payment Method & Date Row */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 8.5, color: '#475569', fontWeight: 'bold', marginRight: 6 }}>
+                <Text style={{ fontSize: 8.5, color: '#1e293b', fontWeight: 'bold', marginRight: 6 }}>
                   {isGu ? 'પદ્ધતિ:' : 'Method:'}
                 </Text>
                 <View
@@ -555,13 +563,15 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
                     borderRadius: 8,
                     paddingHorizontal: 8,
                     paddingVertical: 2.5,
+                    borderWidth: 1,
+                    borderColor: isPendingStatus ? '#fcd34d' : '#7dd3fc',
                   }}
                 >
                   <Text
                     style={{
                       fontSize: 8,
                       fontWeight: 'bold',
-                      color: isPendingStatus ? '#b45309' : '#0284c7',
+                      color: isPendingStatus ? '#92400e' : '#0369a1',
                     }}
                   >
                     {getMethodText(bill.paymentMethod)}
@@ -570,7 +580,7 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
               </View>
 
               {isPaid && bill.paymentDate ? (
-                <Text style={{ fontSize: 8.5, color: '#16a34a', fontWeight: 'bold' }}>
+                <Text style={{ fontSize: 8.5, color: '#15803d', fontWeight: 'bold' }}>
                   {isGu ? 'તારીખ: ' : 'Date: '}{formatDate(bill.paymentDate)}
                 </Text>
               ) : null}
@@ -578,19 +588,19 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
 
             {/* Cheque Info Section - Sleek accent row */}
             {bill.paymentMethod === 'Cheque' ? (
-              <View style={{ backgroundColor: '#f1f5f9', padding: 6, borderRadius: 6, borderLeftWidth: 3, borderLeftColor: '#0284c7', marginTop: 4, marginBottom: 6 }}>
+              <View style={{ backgroundColor: '#f1f5f9', padding: 6, borderRadius: 6, borderLeftWidth: 3.5, borderLeftColor: '#0284c7', marginTop: 4, marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 8, color: '#0f172a', fontWeight: 'bold' }}>
+                  <Text style={{ fontSize: 8, color: '#090d16', fontWeight: 'bold' }}>
                     {isGu ? 'ચેક નં:' : 'Cheque No:'} {bill.chequeNo || 'N/A'}
                   </Text>
                   {bill.chequeDate ? (
-                    <Text style={{ fontSize: 8, color: '#0f172a', fontWeight: 'bold' }}>
+                    <Text style={{ fontSize: 8, color: '#090d16', fontWeight: 'bold' }}>
                       {isGu ? 'તારીખ:' : 'Date:'} {formatDate(bill.chequeDate)}
                     </Text>
                   ) : null}
                 </View>
                 {bill.chequeBank ? (
-                  <Text style={{ fontSize: 8, color: '#475569', marginTop: 2, fontWeight: 'bold' }}>
+                  <Text style={{ fontSize: 8, color: '#1e293b', marginTop: 2, fontWeight: 'bold' }}>
                     {isGu ? 'બેંક:' : 'Bank:'} {bill.chequeBank}
                   </Text>
                 ) : null}
@@ -673,7 +683,7 @@ const SingleBillPage: React.FC<{ bill: Bill; settings: CompanySettings; language
             ) : null}
           </View>
 
-          <View style={{ ...styles.netTotalBox, backgroundColor: '#f0f7ff', borderColor: '#bfdbfe' }}>
+          <View style={{ ...styles.netTotalBox, backgroundColor: '#f8fafc', borderColor: '#cbd5e1' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ ...styles.netTotalLabel, color: '#1e3a8a' }}>{isGu ? 'કુલ રકમ:' : 'Total Amount:'}</Text>
               <Text style={{ ...styles.netTotalValue, color: '#1e3a8a' }}>₹{netTotal.toLocaleString('en-IN')}</Text>

@@ -1,3 +1,9 @@
+import {
+  Print as PrintIcon,
+  PictureAsPdf as PdfIcon,
+  Close as CloseIcon,
+  Badge as BadgeIcon,
+} from '@mui/icons-material';
 import React, { useRef, useState } from 'react';
 import {
   Dialog,
@@ -16,10 +22,10 @@ import {
   IconButton,
   Chip,
 } from '@mui/material';
-import PrintIcon from '@mui/icons-material/Print';
-import PdfIcon from '@mui/icons-material/PictureAsPdf';
-import CloseIcon from '@mui/icons-material/Close';
-import BadgeIcon from '@mui/icons-material/Badge';
+
+
+
+
 import { Worker, CompanySettings } from '../types';
 import { formatRupees, formatDate } from '../utils/formatters';
 import { useCompany } from '../context/CompanyContext';
@@ -185,10 +191,10 @@ export const SalaryPrintModal: React.FC<SalaryPrintModalProps> = ({
               px: 3,
               py: 1,
               borderRadius: 2,
-              background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
-              boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #4338ca 0%, #312e81 100%)',
+                background: 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)',
               },
             }}
           >
@@ -289,7 +295,7 @@ export const SalaryPrintModal: React.FC<SalaryPrintModalProps> = ({
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     paddingBottom: '18px',
-                    borderBottom: '3px solid #4f46e5',
+                    borderBottom: '3px solid #2563eb',
                     marginBottom: '24px',
                   }}
                 >
@@ -315,7 +321,7 @@ export const SalaryPrintModal: React.FC<SalaryPrintModalProps> = ({
                           width: '52px',
                           height: '52px',
                           borderRadius: '10px',
-                          backgroundColor: '#4f46e5',
+                          backgroundColor: '#2563eb',
                           color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
@@ -341,7 +347,7 @@ export const SalaryPrintModal: React.FC<SalaryPrintModalProps> = ({
                       >
                         {activeSettings.companyName || 'FENI CREATION'}
                       </div>
-                      <div style={{ fontWeight: '700', color: '#4f46e5', fontSize: '13px', marginTop: '3px' }}>
+                      <div style={{ fontWeight: '700', color: '#2563eb', fontSize: '13px', marginTop: '3px' }}>
                         {activeSettings.tagline || 'Embroidery & Textile Manufacturing'}
                       </div>
                       <div style={{ color: '#64748b', fontSize: '12px', marginTop: '4px' }}>
@@ -354,7 +360,7 @@ export const SalaryPrintModal: React.FC<SalaryPrintModalProps> = ({
                     <div
                       style={{
                         width: '220px',
-                        backgroundColor: '#1e1b4b',
+                        backgroundColor: '#1e3a8a',
                         color: '#ffffff',
                         padding: '10px 14px',
                         borderRadius: '8px',

@@ -62,14 +62,16 @@ const AppLayout: React.FC = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          px: { xs: 2, sm: 3.5 },
-          py: 3,
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          ml: { md: `${DRAWER_WIDTH}px` },
+          px: { xs: 2, sm: 3 },
+          py: 2.5,
+          width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          maxWidth: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          minWidth: 0,
           mt: '64px',
           minHeight: 'calc(100vh - 64px)',
-          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'background.default' : '#f4f6fa',
+          bgcolor: 'background.default',
           boxSizing: 'border-box',
+          overflowX: 'hidden',
         }}
       >
         <Routes>

@@ -29,6 +29,7 @@ import {
   ToggleButtonGroup,
   Paper,
   Collapse,
+  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -58,18 +59,22 @@ import {
   KeyboardArrowUp as ExpandLessIcon,
   UnfoldMore as ExpandAllIcon,
   UnfoldLess as CollapseAllIcon,
+  CalendarMonth as CalendarMonthIcon,
+  Remove as RemoveIcon,
+  AutoFixHigh as AutoFixHighIcon,
+  RestartAlt as ResetIcon,
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Purchase, Party, CompanySettings } from '../types';
-import { formatRupees, formatDate } from '../utils/formatters';
+import { formatRupees, formatDate, ensureIsoDate } from '../utils/formatters';
 import { apiClient } from '../utils/api';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { PurchaseStatementModal } from '../components/PurchaseStatementModal';
 import { useNotification } from '../context/NotificationContext';
 import { useThemeContext } from '../context/ThemeContext';
-import { useMonthFilter } from '../context/MonthFilterContext';
+import { useMonthFilter, extractYearMonth } from '../context/MonthFilterContext';
 
 interface FormItem {
   id: string;
@@ -128,9 +133,10 @@ export const PurchasePage: React.FC = () => {
 
   const [formOpen, setFormOpen] = useState(false);
   const [taxEnabled, setTaxEnabled] = useState(false);
+  const [adjustType, setAdjustType] = useState<'increase' | 'decrement'>('increase');
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [purchaseToDelete, setPurchaseToDelete] = useState<string | null>(null);
+  const [purchaseToDelete, setPurchaseToDelete] = useState<string | string[] | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [purchaseToView, setPurchaseToView] = useState<Purchase | null>(null);
   const [statementModalOpen, setStatementModalOpen] = useState(false);
@@ -149,11 +155,12 @@ export const PurchasePage: React.FC = () => {
 
   const { showNotification } = useNotification();
   const { mode, language } = useThemeContext();
-  const { selectedMonth, setSelectedMonth, getMonthLabel, isDateInSelectedMonth } = useMonthFilter();
+  const { selectedMonth, setSelectedMonth, selectedMonths, setSelectedMonths, toggleMonth, getMonthLabel, getMultiMonthLabel, isDateInSelectedMonth } = useMonthFilter();
   const [hoveredPurchaseId, setHoveredPurchaseId] = useState<string | null>(null);
   const [idsToDelete, setIdsToDelete] = useState<string[]>([]);
   const [expandedBills, setExpandedBills] = useState<Record<string, boolean>>({});
   const [allExpanded, setAllExpanded] = useState<boolean>(false);
+  const [activePartyMonthTab, setActivePartyMonthTab] = useState<string>('ALL');
 
   const toggleBillExpand = (id: string) => {
     setExpandedBills((prev) => {
@@ -250,6 +257,7 @@ export const PurchasePage: React.FC = () => {
       adjustAmount: '' as any,
       notes: '',
     });
+    setAdjustType('increase');
     setFormOpen(true);
   };
 
@@ -295,6 +303,7 @@ export const PurchasePage: React.FC = () => {
       adjustAmount: p.adjustAmount ?? '' as any,
       notes: p.notes || '',
     });
+    setAdjustType((Number(p.adjustAmount) || 0) < 0 ? 'decrement' : 'increase');
     setFormOpen(true);
   };
 
@@ -381,6 +390,7 @@ export const PurchasePage: React.FC = () => {
       notes: Array.from(new Set(combinedNotesArr)).join(' | '),
     });
 
+    setAdjustType((Number(totalAdjust) || 0) < 0 ? 'decrement' : 'increase');
     setFormOpen(true);
   };
 
@@ -473,14 +483,83 @@ export const PurchasePage: React.FC = () => {
     });
   };
 
+  // Handle toggling between Increase (+ વધારો) and Decrement (- ઘટાડો)
+  const handleAdjustTypeChange = (newType: 'increase' | 'decrement') => {
+    setAdjustType(newType);
+    const currentNum = formData.adjustAmount !== '' && formData.adjustAmount !== null && formData.adjustAmount !== undefined
+      ? Math.abs(Number(formData.adjustAmount) || 0)
+      : '';
+    if (currentNum !== '' && currentNum > 0) {
+      const signed = newType === 'decrement' ? -currentNum : currentNum;
+      setFormData((prev) => ({ ...prev, adjustAmount: signed }));
+    }
+  };
+
+  // Handle direct text/number input for adjust amount
+  const handleAdjustValueChange = (valStr: string) => {
+    if (valStr === '' || valStr === null) {
+      setFormData((prev) => ({ ...prev, adjustAmount: '' as any }));
+      return;
+    }
+    if (valStr.startsWith('-')) {
+      setAdjustType('decrement');
+      const num = Math.abs(parseFloat(valStr) || 0);
+      setFormData((prev) => ({ ...prev, adjustAmount: -num }));
+      return;
+    }
+    const num = Math.abs(parseFloat(valStr) || 0);
+    const signed = adjustType === 'decrement' ? -num : num;
+    setFormData((prev) => ({ ...prev, adjustAmount: signed }));
+  };
+
+  // Step adjust amount by delta (e.g. +10, +50, +100, -10, -50, -100)
+  const handleStepAdjust = (delta: number) => {
+    const current = Number(formData.adjustAmount) || 0;
+    const next = Number((current + delta).toFixed(2));
+    if (next < 0) {
+      setAdjustType('decrement');
+    } else if (next > 0) {
+      setAdjustType('increase');
+    }
+    setFormData((prev) => ({ ...prev, adjustAmount: next === 0 ? ('' as any) : next }));
+  };
+
+  // Auto round-off calculation to make total a whole rupee
+  const handleAutoRoundOff = () => {
+    const rawItemsSubtotal = formData.items.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
+    const subtotal = Number(rawItemsSubtotal.toFixed(2));
+    const cgst = taxEnabled ? Number((subtotal * 0.025).toFixed(2)) : 0;
+    const sgst = taxEnabled ? Number((subtotal * 0.025).toFixed(2)) : 0;
+    const baseTotal = subtotal + cgst + sgst;
+    const rounded = Math.round(baseTotal);
+    const diff = Number((rounded - baseTotal).toFixed(2));
+    if (diff < 0) {
+      setAdjustType('decrement');
+    } else {
+      setAdjustType('increase');
+    }
+    setFormData((prev) => ({ ...prev, adjustAmount: diff === 0 ? ('' as any) : diff }));
+  };
+
+  // Reset adjust amount to 0
+  const handleResetAdjust = () => {
+    setFormData((prev) => ({ ...prev, adjustAmount: '' as any }));
+  };
+
+  // Quick set full paid amount
+  const handleSetFullPaid = () => {
+    const { totalAmount } = calculateGst();
+    setFormData((prev) => ({ ...prev, paidAmount: totalAmount }));
+  };
+
   const calculateGst = () => {
     const rawItemsSubtotal = formData.items.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
     const adjustAmount = Number(formData.adjustAmount) || 0;
-    const subtotal = Number((rawItemsSubtotal + adjustAmount).toFixed(2));
+    const subtotal = Number(rawItemsSubtotal.toFixed(2));
     const cgst = taxEnabled ? Number((subtotal * 0.025).toFixed(2)) : 0;
     const sgst = taxEnabled ? Number((subtotal * 0.025).toFixed(2)) : 0;
-    const totalTax = cgst + sgst;
-    const totalAmount = Number((subtotal + totalTax).toFixed(2));
+    const totalTax = Number((cgst + sgst).toFixed(2));
+    const totalAmount = Number((subtotal + totalTax + adjustAmount).toFixed(2));
     const paid = Number(formData.paidAmount) || 0;
     const pendingAmount = Number((totalAmount - paid).toFixed(2));
     return { rawItemsSubtotal, subtotal, cgst, sgst, totalTax, adjustAmount, totalAmount, pendingAmount };
@@ -496,7 +575,7 @@ export const PurchasePage: React.FC = () => {
 
       const payload: Purchase = {
         ...formData,
-        id: selectedPurchase?.id || ('pur_' + Date.now()),
+        id: selectedPurchase ? selectedPurchase.id : '',
         subtotal,
         cgst,
         sgst,
@@ -517,7 +596,7 @@ export const PurchasePage: React.FC = () => {
         })),
       };
 
-      await apiClient.savePurchase(payload);
+      const saved = await apiClient.savePurchase(payload);
 
       // Clean up duplicate purchase records if consolidating into 1 bill
       if (idsToDelete.length > 0) {
@@ -531,29 +610,57 @@ export const PurchasePage: React.FC = () => {
         setIdsToDelete([]);
       }
 
-      showNotification(idsToDelete.length > 0 ? `Merged into 1 Monthly Bill for ${formData.supplierName}!` : (selectedPurchase ? 'Purchase entry updated!' : 'New Purchase record added!'), 'success');
+      setPurchases((prev) => {
+        const targetId = saved?.id || payload.id;
+        const exists = prev.some((p) => p.id === targetId || p.purchaseNo === saved?.purchaseNo);
+        if (exists) {
+          return prev.map((p) => (p.id === targetId || p.purchaseNo === saved?.purchaseNo ? { ...p, ...saved } : p));
+        } else {
+          return [saved || payload, ...prev];
+        }
+      });
+
+      showNotification(
+        idsToDelete.length > 0
+          ? `Merged into 1 Monthly Bill for ${formData.supplierName}!`
+          : selectedPurchase
+          ? (language === 'gu' ? 'ખરીદી એન્ટ્રી સફળતાપૂર્વક સુધારી!' : 'Purchase entry updated!')
+          : (language === 'gu' ? 'નવી ખરીદી સફળતાપૂર્વક ઉમેરી!' : 'New Purchase record added!'),
+        'success'
+      );
       setFormOpen(false);
-      fetchData();
+      setSelectedPurchase(null);
+      await fetchData();
     } catch {
-      showNotification('Saved purchase entry', 'success');
+      showNotification(language === 'gu' ? 'ખરીદી એન્ટ્રી સેવ થઈ ગઈ' : 'Saved purchase entry', 'success');
       setFormOpen(false);
+      await fetchData();
     }
   };
 
   const handleDeleteConfirm = async () => {
     if (!purchaseToDelete) return;
+    const targetIds = Array.isArray(purchaseToDelete) ? purchaseToDelete : [purchaseToDelete];
+
+    // Immediately close popup and reset state so the dialog never hangs
+    setDeleteOpen(false);
+    setPurchaseToDelete(null);
+
+    // Optimistically remove from state immediately
+    setPurchases((prev) => prev.filter((p) => !targetIds.includes(p.id) && !targetIds.includes(p.id.replace(/_\d{4}-\d{2}$/, ''))));
+
     try {
-      await apiClient.deletePurchase(purchaseToDelete);
-      showNotification('Purchase record deleted', 'success');
-      await fetchData();
+      for (const delId of targetIds) {
+        await apiClient.deletePurchase(delId);
+      }
+      showNotification(language === 'gu' ? 'ખરીદી રેકોર્ડ કાઢી નાખ્યો!' : 'Purchase record deleted', 'success');
+      fetchData().catch(() => {});
     } catch {
-      showNotification('Purchase removed', 'info');
-      setPurchases(purchases.filter((p) => p.id !== purchaseToDelete));
-    } finally {
-      setDeleteOpen(false);
-      setPurchaseToDelete(null);
+      showNotification(language === 'gu' ? 'ખરીદી રેકોર્ડ કાઢી નાખ્યો' : 'Purchase removed', 'info');
+      fetchData().catch(() => {});
     }
   };
+
 
   const getPurchaseStatus = (p: Purchase): 'PAID' | 'PARTIAL' | 'PENDING' => {
     const sub = Number(p.subtotal) || 0;
@@ -565,6 +672,15 @@ export const PurchasePage: React.FC = () => {
     if (paid > 0 && paid < total) return 'PARTIAL';
     if (p.status === 'Paid' || (p as any).status === 'PAID') return 'PAID';
     return 'PENDING';
+  };
+
+  const getPurchaseYearMonth = (p: Purchase): string => {
+    let d = p.date || (p.items && p.items.find((i) => i.challanDate)?.challanDate) || (p as any).createdAt || '';
+    if (typeof d === 'string' && (d.startsWith('0026') || d.startsWith('0006'))) {
+      d = '2026' + d.substring(4);
+    }
+    const ym = extractYearMonth(d);
+    return ym || 'All';
   };
 
   const filteredPurchases = useMemo(() => {
@@ -581,8 +697,12 @@ export const PurchasePage: React.FC = () => {
         pSupplier.toLowerCase().includes(s) ||
         matName.toLowerCase().includes(s);
 
-      const pDate = p.date || (p as any).createdAt || (p.items && p.items[0]?.challanDate) || '';
-      const matchesMonth = isDateInSelectedMonth(pDate);
+      // Prioritize the Bill Date (p.date) so March/April bills only show in March/April, not in October!
+      const purchaseDate =
+        p.date ||
+        (p.items && p.items.find((i) => i.challanDate)?.challanDate) ||
+        (p as any).createdAt;
+      const matchesMonth = isDateInSelectedMonth(purchaseDate);
 
       const filterPartyClean = selectedPartyFilter.trim().toLowerCase();
       const isAllParty =
@@ -608,7 +728,7 @@ export const PurchasePage: React.FC = () => {
 
       return matchesSearch && matchesMonth && matchesParty && matchesStatus;
     });
-  }, [purchases, search, selectedMonth, selectedPartyFilter, selectedStatusFilter]);
+  }, [purchases, search, selectedMonth, selectedMonths, isDateInSelectedMonth, selectedPartyFilter, selectedStatusFilter]);
 
   const purchasesForSelectedPartyInOtherMonths = useMemo(() => {
     if (selectedPartyFilter === 'ALL' || selectedPartyFilter === 'All') return [];
@@ -623,6 +743,19 @@ export const PurchasePage: React.FC = () => {
       );
     });
   }, [purchases, selectedPartyFilter]);
+
+  const allMonthsWithPurchases = useMemo(() => {
+    const map = new Map<string, number>();
+    purchases.forEach((p) => {
+      const ym = getPurchaseYearMonth(p);
+      if (ym && ym !== 'All') {
+        map.set(ym, (map.get(ym) || 0) + 1);
+      }
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([mKey, count]) => ({ mKey, count, label: getMonthLabel(mKey, language) }));
+  }, [purchases, language, getMonthLabel]);
 
   const getPurchaseCalculatedValues = (p: Purchase) => {
     let itemsSub = 0;
@@ -801,7 +934,10 @@ export const PurchasePage: React.FC = () => {
   }, [filteredPurchases, sortField, sortOrder]);
 
   interface PartyGroup {
+    groupKey: string;
     partyName: string;
+    monthKey: string;
+    monthLabel: string;
     purchases: Purchase[];
     totalSubtotal: number;
     totalSgst: number;
@@ -813,18 +949,79 @@ export const PurchasePage: React.FC = () => {
     challanCount: number;
   }
 
-  const partyGroups = useMemo(() => {
-    const map = new Map<string, Purchase[]>();
+
+  const partyGroups: PartyGroup[] = useMemo(() => {
+    const map = new Map<string, { partyName: string; monthKey: string; purchases: Purchase[] }>();
     sortedPurchases.forEach((p) => {
-      const key = (p.supplierName || (p as any).partyName || (p as any).supplier || '').trim() || 'Unknown Party';
-      if (!map.has(key)) {
-        map.set(key, []);
+      const pName = (p.supplierName || (p as any).partyName || (p as any).supplier || '').trim() || 'Unknown Party';
+
+      // Determine if purchase items span multiple months
+      if (p.items && p.items.length > 0) {
+        const itemsByMonth = new Map<string, typeof p.items>();
+        p.items.forEach((item) => {
+          let itemDate = item.challanDate || p.date || (p as any).createdAt || '';
+          if (typeof itemDate === 'string' && (itemDate.startsWith('0026') || itemDate.startsWith('0006'))) {
+            itemDate = '2026' + itemDate.substring(4);
+          }
+          const itemYm = extractYearMonth(itemDate) || 'All';
+          if (!itemsByMonth.has(itemYm)) {
+            itemsByMonth.set(itemYm, []);
+          }
+          itemsByMonth.get(itemYm)!.push(item);
+        });
+
+        if (itemsByMonth.size <= 1) {
+          const mKey = itemsByMonth.keys().next().value || getPurchaseYearMonth(p);
+          const groupKey = `${pName.toLowerCase()}____${mKey}`;
+          if (!map.has(groupKey)) {
+            map.set(groupKey, { partyName: pName, monthKey: mKey, purchases: [] });
+          }
+          map.get(groupKey)!.purchases.push(p);
+        } else {
+          // Items span multiple months: separate items into their respective month's group!
+          itemsByMonth.forEach((monthItems, mKey) => {
+            const groupKey = `${pName.toLowerCase()}____${mKey}`;
+            if (!map.has(groupKey)) {
+              map.set(groupKey, { partyName: pName, monthKey: mKey, purchases: [] });
+            }
+            const monthSubtotal = monthItems.reduce((acc, i) => {
+              const amt = Number(i.amount);
+              if (!isNaN(amt) && amt > 0) return acc + amt;
+              const q = Number(i.quantity) || 0;
+              const r = Number(i.rate) || 0;
+              return acc + (q * r);
+            }, 0);
+            const hasTax = (p.cgst && p.cgst > 0) || (p.sgst && p.sgst > 0);
+            const monthTax = hasTax ? Number((monthSubtotal * 0.05).toFixed(2)) : 0;
+            const monthCgst = hasTax ? Number((monthTax / 2).toFixed(2)) : 0;
+            const monthSgst = hasTax ? Number((monthTax / 2).toFixed(2)) : 0;
+            const monthTotal = monthSubtotal + monthTax;
+
+            const partitionedPurchase: Purchase = {
+              ...p,
+              id: p.id,
+              subtotal: monthSubtotal,
+              cgst: monthCgst,
+              sgst: monthSgst,
+              totalAmount: monthTotal,
+              items: monthItems,
+            };
+            (partitionedPurchase as any).displayKey = `${p.id}_${mKey}`;
+            map.get(groupKey)!.purchases.push(partitionedPurchase);
+          });
+        }
+      } else {
+        const mKey = getPurchaseYearMonth(p);
+        const groupKey = `${pName.toLowerCase()}____${mKey}`;
+        if (!map.has(groupKey)) {
+          map.set(groupKey, { partyName: pName, monthKey: mKey, purchases: [] });
+        }
+        map.get(groupKey)!.purchases.push(p);
       }
-      map.get(key)!.push(p);
     });
 
     const groups: PartyGroup[] = [];
-    map.forEach((pList, partyName) => {
+    map.forEach(({ partyName, monthKey, purchases: pList }, groupKey) => {
       let totalSubtotal = 0;
       let totalSgst = 0;
       let totalCgst = 0;
@@ -858,9 +1055,13 @@ export const PurchasePage: React.FC = () => {
       });
 
       const challanCount = partyUniqueChallans.size > 0 ? partyUniqueChallans.size : pList.length;
+      const monthLabel = (monthKey && monthKey !== 'All') ? getMonthLabel(monthKey, language) : '';
 
       groups.push({
+        groupKey,
         partyName,
+        monthKey,
+        monthLabel,
         purchases: pList,
         totalSubtotal: Number(totalSubtotal.toFixed(2)),
         totalSgst: Number(totalSgst.toFixed(2)),
@@ -874,24 +1075,61 @@ export const PurchasePage: React.FC = () => {
     });
 
     return groups.sort((a, b) => {
+      // Primary: Partition by Month DESC (newest month first: e.g. Sep then Aug)
+      const monthComp = b.monthKey.localeCompare(a.monthKey);
+      if (monthComp !== 0) return monthComp;
+
       if (sortField === 'supplierName') {
-        return sortOrder === 'asc'
-          ? a.partyName.localeCompare(b.partyName)
-          : b.partyName.localeCompare(a.partyName);
+        const nameComp = a.partyName.localeCompare(b.partyName);
+        return sortOrder === 'asc' ? nameComp : -nameComp;
       }
       if (sortField === 'subtotal' || sortField === 'totalAmount') {
         return sortOrder === 'asc' ? a.totalAmount - b.totalAmount : b.totalAmount - a.totalAmount;
       }
-      return sortOrder === 'asc'
-        ? a.partyName.localeCompare(b.partyName)
-        : b.partyName.localeCompare(a.partyName);
+      if (sortField === 'date' || sortField === 'challanDate') {
+        return 0;
+      }
+      return a.partyName.localeCompare(b.partyName);
     });
-  }, [sortedPurchases, sortField, sortOrder]);
+  }, [sortedPurchases, sortField, sortOrder, language, getMonthLabel]);
+
+  const monthStatsMap = useMemo(() => {
+    const map: Record<string, { partyCount: number; challanCount: number; totalAmount: number; monthLabel: string }> = {};
+    partyGroups.forEach((g) => {
+      if (!map[g.monthKey]) {
+        map[g.monthKey] = {
+          partyCount: 0,
+          challanCount: 0,
+          totalAmount: 0,
+          monthLabel: g.monthLabel,
+        };
+      }
+      map[g.monthKey].partyCount += 1;
+      map[g.monthKey].challanCount += g.challanCount;
+      map[g.monthKey].totalAmount += g.totalAmount;
+    });
+    return map;
+  }, [partyGroups]);
+
+  const distinctMonthKeys = useMemo(() => {
+    const set = new Set<string>();
+    partyGroups.forEach((g) => {
+      if (g.monthKey && g.monthKey !== 'All') set.add(g.monthKey);
+    });
+    return Array.from(set).sort().reverse();
+  }, [partyGroups]);
+
+  const displayedPartyGroups = useMemo(() => {
+    if (activePartyMonthTab === 'ALL') return partyGroups;
+    return partyGroups.filter((g) => g.monthKey === activePartyMonthTab);
+  }, [partyGroups, activePartyMonthTab]);
 
   const gstCalcs = calculateGst();
 
   const exportMonthlyPurchaseExcel = () => {
-    const monthLabel = selectedMonth === 'ALL' || selectedMonth === 'All' ? 'All Months' : getMonthLabel(selectedMonth, language);
+    const monthLabel = selectedMonths.length > 0
+      ? (selectedMonths.length === 1 ? getMonthLabel(selectedMonths[0], language) : selectedMonths.map((m) => getMonthLabel(m, language)).join('_'))
+      : (selectedMonth === 'ALL' || selectedMonth === 'All' ? 'All Months' : getMonthLabel(selectedMonth, language));
     const cleanMonthName = monthLabel.replace(/[^a-zA-Z0-9]/g, '_');
     const filename = `Material_Purchase_Statement_${cleanMonthName}.xlsx`;
 
@@ -902,10 +1140,10 @@ export const PurchasePage: React.FC = () => {
       partyGroups.forEach((group) => {
         // Party Section Header Row
         dataRows.push({
-          'Sr No': `🏢 ${group.partyName.toUpperCase()}`,
-          'Challan Date': `Total Challans: ${group.challanCount}`,
+          'Sr No': `🏢 ${group.partyName.toUpperCase()}${group.monthLabel ? ` [${group.monthLabel}]` : ''}`,
+          'Challan Date': `${group.monthLabel ? `Month: ${group.monthLabel} | ` : ''}Total Challans: ${group.challanCount}`,
           'Challan No': `Total Net: Rs.${group.totalAmount.toFixed(2)}`,
-          'Party / Supplier Name': group.partyName,
+          'Party / Supplier Name': group.monthLabel ? `${group.partyName} (${group.monthLabel})` : group.partyName,
           'Material Description': 'PARTY PURCHASE GROUP',
           'Bill Total (Rs)': group.totalAmount,
           'Paid Amount (Rs)': group.paidAmount,
@@ -1580,53 +1818,382 @@ export const PurchasePage: React.FC = () => {
               })}
             </Box>
 
-            {/* Financial Adjustments & Payment Details */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, mb: 3 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                  Financial Adjustments / એડજસ્ટમેન્ટ
-                </Typography>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Adjustment Amount (₹) (+ Extra / - Discount)"
-                  value={formData.adjustAmount}
-                  onChange={(e) => setFormData({ ...formData, adjustAmount: e.target.value })}
-                  helperText="Use negative (-) for discount/less, positive (+) for extra charges"
-                  inputProps={{
-                    onWheel: (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur(),
-                  }}
-                />
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  label="Notes / નોંધ"
-                  placeholder="e.g. Discount given by supplier or transport charges added"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                />
-              </Box>
+            {/* Financial Summary & Adjust Amount & Payment Section */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.15fr 0.85fr' }, gap: 3, mb: 4 }}>
+              {/* LEFT CARD: Sequential Bill Calculations: Subtotal -> GST -> Adjust Amount (Increase / Decrement) -> Total Bill Amount */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: { xs: 2.5, sm: 3 },
+                  borderRadius: 3,
+                  bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
+                  border: `1.5px solid ${mode === 'dark' ? '#334155' : '#cbd5e1'}`,
+                  boxShadow: mode === 'dark' ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, pb: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}` }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AmountIcon fontSize="small" />
+                    {language === 'gu' ? 'બિલ ગણતરી અને એડજસ્ટમેન્ટ (Bill Summary)' : 'Bill Calculation & Adjustments'}
+                  </Typography>
+                  <Chip
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    label={`${formData.items.length} ${language === 'gu' ? 'આઇટમ્સ' : 'Items'}`}
+                    sx={{ fontWeight: 700 }}
+                  />
+                </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                  Payment Entry / પેમેન્ટ વિગત
-                </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
+                {/* 1. SUBTOTAL */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.5, bgcolor: mode === 'dark' ? 'rgba(255,255,255,0.03)' : '#f8fafc', borderRadius: 2 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: mode === 'dark' ? '#cbd5e1' : '#334155' }}>
+                      1. Subtotal (આઇટમ સબટોટલ)
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {language === 'gu' ? 'તમામ ચલાણ આઇટમો નો કુલ સરવાળો' : 'Total sum of all challan items'}
+                    </Typography>
+                  </Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, color: mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
+                    {formatRupees(gstCalcs.subtotal)}
+                  </Typography>
+                </Box>
+
+                {/* 2. GST TAX SECTION */}
+                <Box sx={{ p: 2, bgcolor: mode === 'dark' ? 'rgba(59, 130, 246, 0.08)' : '#eff6ff', borderRadius: 2, border: `1px solid ${mode === 'dark' ? 'rgba(59, 130, 246, 0.2)' : '#bfdbfe'}` }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TaxIcon fontSize="small" color="primary" />
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: mode === 'dark' ? '#93c5fd' : '#1e40af' }}>
+                        2. GST Tax (૫% જીએસટી ટેક્સ)
+                      </Typography>
+                    </Box>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={taxEnabled}
+                          onChange={(e) => setTaxEnabled(e.target.checked)}
+                          color="primary"
+                          size="small"
+                        />
+                      }
+                      label={
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: mode === 'dark' ? '#93c5fd' : '#1e40af' }}>
+                          {taxEnabled ? (language === 'gu' ? 'ટેક્સ લાગુ છે (ON)' : 'Tax Applied (ON)') : (language === 'gu' ? 'ટેક્સ બંધ છે (OFF)' : 'Tax Disabled (OFF)')}
+                        </Typography>
+                      }
+                    />
+                  </Box>
+
+                  {taxEnabled ? (
+                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px dashed ${mode === 'dark' ? '#3b82f6' : '#93c5fd'}` }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="body2" color="text.secondary">CGST (2.5%):</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>+{formatRupees(gstCalcs.cgst)}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="body2" color="text.secondary">SGST (2.5%):</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>+{formatRupees(gstCalcs.sgst)}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 0.75, borderTop: `1px solid ${mode === 'dark' ? '#1e3a8a' : '#dbeafe'}` }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          Subtotal + GST (ટેક્સ સાથે રકમ):
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                          {formatRupees(Number((gstCalcs.subtotal + gstCalcs.totalTax).toFixed(2)))}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary', fontStyle: 'italic' }}>
+                      {language === 'gu' ? 'કોઈ ટેક્સ લાગુ નથી (CGST 0% + SGST 0%)' : 'No tax applied (0% tax bill)'}
+                    </Typography>
+                  )}
+                </Box>
+
+                {/* 3. ADJUST AMOUNT (એડજસ્ટ રકમ) - DIRECTLY AFTER SUBTOTAL AND GST */}
+                <Box
+                  sx={{
+                    p: 2.25,
+                    bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc',
+                    borderRadius: 2.5,
+                    border: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1.5,
+                  }}
+                >
+                  {/* Header Row */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.92rem' }}>
+                        3. Adjust Amount (એડજસ્ટ રકમ)
+                      </Typography>
+                      {gstCalcs.adjustAmount !== 0 && (
+                        <Chip
+                          size="small"
+                          label={gstCalcs.adjustAmount > 0 ? `+${formatRupees(gstCalcs.adjustAmount)} (વધારો / Extra)` : `${formatRupees(gstCalcs.adjustAmount)} (ઘટાડો / Discount)`}
+                          color={gstCalcs.adjustAmount > 0 ? 'success' : 'error'}
+                          sx={{ fontWeight: 800, height: 22, fontSize: '0.72rem' }}
+                        />
+                      )}
+                    </Box>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                      {language === 'gu' ? 'Subtotal & GST પછી એડજસ્ટમેન્ટ' : 'Applied after Subtotal & GST'}
+                    </Typography>
+                  </Box>
+
+                  {/* Mode Selector: Increase vs Decrement */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.25 }}>
+                    <Button
+                      variant={adjustType === 'increase' ? 'contained' : 'outlined'}
+                      startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+                      onClick={() => handleAdjustTypeChange('increase')}
+                      sx={{
+                        fontWeight: 700,
+                        py: 0.85,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontSize: '0.85rem',
+                        bgcolor: adjustType === 'increase' ? '#16a34a' : 'transparent',
+                        color: adjustType === 'increase' ? '#ffffff' : '#16a34a',
+                        borderColor: '#16a34a',
+                        boxShadow: adjustType === 'increase' ? '0 2px 6px rgba(22, 163, 74, 0.25)' : 'none',
+                        '&:hover': {
+                          bgcolor: adjustType === 'increase' ? '#15803d' : 'rgba(22, 163, 74, 0.08)',
+                          borderColor: '#15803d',
+                        },
+                      }}
+                    >
+                      {language === 'gu' ? 'વધારો (Increase / Extra)' : 'Increase (Extra Charge)'}
+                    </Button>
+                    <Button
+                      variant={adjustType === 'decrement' ? 'contained' : 'outlined'}
+                      startIcon={<RemoveIcon sx={{ fontSize: 18 }} />}
+                      onClick={() => handleAdjustTypeChange('decrement')}
+                      sx={{
+                        fontWeight: 700,
+                        py: 0.85,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontSize: '0.85rem',
+                        bgcolor: adjustType === 'decrement' ? '#dc2626' : 'transparent',
+                        color: adjustType === 'decrement' ? '#ffffff' : '#dc2626',
+                        borderColor: '#dc2626',
+                        boxShadow: adjustType === 'decrement' ? '0 2px 6px rgba(220, 38, 38, 0.25)' : 'none',
+                        '&:hover': {
+                          bgcolor: adjustType === 'decrement' ? '#b91c1c' : 'rgba(220, 38, 38, 0.08)',
+                          borderColor: '#b91c1c',
+                        },
+                      }}
+                    >
+                      {language === 'gu' ? 'ઘટાડો (Decrement / Discount)' : 'Decrement (Discount/Cut)'}
+                    </Button>
+                  </Box>
+
+                  {/* Input Row with Auto Round Off & Clear Button */}
+                  <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      placeholder="0.00"
+                      label={adjustType === 'increase' ? (language === 'gu' ? 'વધારો રકમ (₹ Extra Charge)' : 'Increase Amount (₹ Extra)') : (language === 'gu' ? 'ઘટાડો રકમ (₹ Discount)' : 'Discount Amount (₹ Less)')}
+                      value={formData.adjustAmount !== '' && formData.adjustAmount !== null && formData.adjustAmount !== undefined ? Math.abs(Number(formData.adjustAmount) || 0) || '' : ''}
+                      onChange={(e) => handleAdjustValueChange(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: adjustType === 'increase' ? 'success.main' : 'error.main' }}>
+                              {adjustType === 'increase' ? '+ ₹' : '- ₹'}
+                            </Typography>
+                          </InputAdornment>
+                        ),
+                      }}
+                      inputProps={{
+                        onWheel: (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur(),
+                        step: 'any',
+                      }}
+                    />
+                    <Button
+                      variant="outlined"
+                      color="info"
+                      startIcon={<AutoFixHighIcon sx={{ fontSize: 16 }} />}
+                      onClick={handleAutoRoundOff}
+                      sx={{
+                        whiteSpace: 'nowrap',
+                        height: 40,
+                        px: 1.75,
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        borderRadius: 2,
+                      }}
+                    >
+                      {language === 'gu' ? 'ઓટો રાઉન્ડ ઓફ' : 'Auto Round Off'}
+                    </Button>
+                    {Boolean(formData.adjustAmount) && (
+                      <Button
+                        variant="text"
+                        color="inherit"
+                        startIcon={<ResetIcon sx={{ fontSize: 16 }} />}
+                        onClick={handleResetAdjust}
+                        sx={{
+                          whiteSpace: 'nowrap',
+                          height: 40,
+                          px: 1.25,
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          color: 'text.secondary',
+                        }}
+                      >
+                        {language === 'gu' ? 'સાફ કરો' : 'Clear'}
+                      </Button>
+                    )}
+                  </Box>
+
+                  {/* Quick Stepper Chips Row with Clean Divider */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.75, pt: 0.5 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mr: 0.5 }}>
+                      {language === 'gu' ? 'સ્ટેપર્સ:' : 'Steppers:'}
+                    </Typography>
+
+                    {/* Negative Steppers (Red / Decrement) */}
+                    <Chip label="-₹100" size="small" variant="outlined" color="error" onClick={() => handleStepAdjust(-100)} sx={{ fontWeight: 700, cursor: 'pointer', height: 26 }} />
+                    <Chip label="-₹50" size="small" variant="outlined" color="error" onClick={() => handleStepAdjust(-50)} sx={{ fontWeight: 700, cursor: 'pointer', height: 26 }} />
+                    <Chip label="-₹10" size="small" variant="outlined" color="error" onClick={() => handleStepAdjust(-10)} sx={{ fontWeight: 700, cursor: 'pointer', height: 26 }} />
+                    <Chip label="-₹1" size="small" variant="outlined" color="error" onClick={() => handleStepAdjust(-1)} sx={{ fontWeight: 700, cursor: 'pointer', height: 26 }} />
+
+                    {/* Clean Vertical Divider */}
+                    <Divider orientation="vertical" flexItem sx={{ mx: 0.5, height: 18, alignSelf: 'center' }} />
+
+                    {/* Positive Steppers (Green / Increase) */}
+                    <Chip label="+₹1" size="small" variant="outlined" color="success" onClick={() => handleStepAdjust(1)} sx={{ fontWeight: 700, cursor: 'pointer', height: 26 }} />
+                    <Chip label="+₹10" size="small" variant="outlined" color="success" onClick={() => handleStepAdjust(10)} sx={{ fontWeight: 700, cursor: 'pointer', height: 26 }} />
+                    <Chip label="+₹50" size="small" variant="outlined" color="success" onClick={() => handleStepAdjust(50)} sx={{ fontWeight: 700, cursor: 'pointer', height: 26 }} />
+                    <Chip label="+₹100" size="small" variant="outlined" color="success" onClick={() => handleStepAdjust(100)} sx={{ fontWeight: 700, cursor: 'pointer', height: 26 }} />
+                  </Box>
+                </Box>
+
+                {/* 4. TOTAL BILL AMOUNT - DIRECTLY AFTER ADJUST AMOUNT */}
+                <Box
+                  sx={{
+                    p: 2.25,
+                    bgcolor: mode === 'dark' ? 'rgba(34, 197, 94, 0.12)' : '#f0fdf4',
+                    borderRadius: 2.5,
+                    border: `2px solid ${mode === 'dark' ? '#22c55e' : '#16a34a'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.75,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 900, color: mode === 'dark' ? '#4ade80' : '#15803d' }}>
+                      4. Total Bill Amount (કુલ બિલ રકમ):
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: mode === 'dark' ? '#4ade80' : '#15803d' }}>
+                      {formatRupees(gstCalcs.totalAmount)}
+                    </Typography>
+                  </Box>
+
+                  <Typography variant="caption" sx={{ color: mode === 'dark' ? '#86efac' : '#166534', fontWeight: 600 }}>
+                    {language === 'gu' ? 'ગણતરી:' : 'Calculation:'} {formatRupees(gstCalcs.subtotal)} (Subtotal) {taxEnabled ? `+ ${formatRupees(gstCalcs.totalTax)} (GST)` : ''} {gstCalcs.adjustAmount !== 0 ? (gstCalcs.adjustAmount > 0 ? `+ ${formatRupees(gstCalcs.adjustAmount)} (Adjust વધારો)` : `- ${formatRupees(Math.abs(gstCalcs.adjustAmount))} (Adjust ઘટાડો)`) : ''} = <strong>{formatRupees(gstCalcs.totalAmount)}</strong>
+                  </Typography>
+                </Box>
+              </Paper>
+
+              {/* RIGHT CARD: Payment Entry, Pending Balance & Notes */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: { xs: 2.5, sm: 3 },
+                  borderRadius: 3,
+                  bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
+                  border: `1.5px solid ${mode === 'dark' ? '#334155' : '#cbd5e1'}`,
+                  boxShadow: mode === 'dark' ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, pb: 1, borderBottom: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}` }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PaymentIcon fontSize="small" color="primary" />
+                    {language === 'gu' ? 'પેમેન્ટ વિગત અને બાકી રકમ' : 'Payment Entry & Status'}
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={gstCalcs.pendingAmount <= 0 ? (language === 'gu' ? 'ચૂકવેલ (PAID)' : 'PAID') : (Number(formData.paidAmount || 0) > 0 ? (language === 'gu' ? 'અંશતઃ (PARTIAL)' : 'PARTIAL') : (language === 'gu' ? 'બાકી (PENDING)' : 'PENDING'))}
+                    color={gstCalcs.pendingAmount <= 0 ? 'success' : (Number(formData.paidAmount || 0) > 0 ? 'warning' : 'error')}
+                    sx={{ fontWeight: 800 }}
+                  />
+                </Box>
+
+                {/* Paid Amount Input + Quick Full Paid Button */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      Paid Amount (ચુકવેલ રકમ ₹)
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="success"
+                      onClick={handleSetFullPaid}
+                      disabled={gstCalcs.totalAmount <= 0}
+                      sx={{ textTransform: 'none', py: 0.25, px: 1, fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                    >
+                      {language === 'gu' ? 'પૂરું ચૂકવ્યું (Full Paid)' : 'Full Paid'}
+                    </Button>
+                  </Box>
                   <TextField
                     fullWidth
                     type="number"
-                    label="Paid Amount (ચુકવેલ રકમ ₹)"
+                    size="small"
+                    placeholder="0.00"
                     value={formData.paidAmount}
                     onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                    }}
                     inputProps={{
                       onWheel: (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur(),
                     }}
                   />
+                </Box>
+
+                {/* Pending Balance Banner */}
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: gstCalcs.pendingAmount <= 0 ? (mode === 'dark' ? 'rgba(34, 197, 94, 0.15)' : '#dcfce7') : (mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2'),
+                    border: `1px solid ${gstCalcs.pendingAmount <= 0 ? '#86efac' : '#fca5a5'}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: gstCalcs.pendingAmount <= 0 ? '#15803d' : '#b91c1c' }}>
+                    {language === 'gu' ? 'બાકી રકમ (Pending Balance):' : 'Pending Balance:'}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 900, color: gstCalcs.pendingAmount <= 0 ? '#15803d' : '#b91c1c' }}>
+                    {formatRupees(gstCalcs.pendingAmount)}
+                  </Typography>
+                </Box>
+
+                {/* Payment Date & Mode */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                   <TextField
                     fullWidth
+                    size="small"
                     type="date"
-                    label="Payment Paid Date (ચુકવણી તા.)"
+                    label={language === 'gu' ? 'ચુકવણી તા. (Payment Date)' : 'Payment Date'}
                     value={formData.paymentDate}
                     onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
                     InputLabelProps={{ shrink: true }}
@@ -1634,7 +2201,8 @@ export const PurchasePage: React.FC = () => {
                   <TextField
                     select
                     fullWidth
-                    label="Payment Method"
+                    size="small"
+                    label={language === 'gu' ? 'ચુકવણી પદ્ધતિ' : 'Payment Method'}
                     value={formData.paymentMethod}
                     onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
                   >
@@ -1644,44 +2212,25 @@ export const PurchasePage: React.FC = () => {
                     <MenuItem value="UPI / Online">UPI / Online</MenuItem>
                   </TextField>
                 </Box>
+
                 <TextField
                   fullWidth
-                  label="Cheque / Reference No"
+                  size="small"
+                  label={language === 'gu' ? 'ચેક / રેફરન્સ નં. (Cheque / Ref No)' : 'Cheque / Ref No'}
                   value={formData.chequeNo}
                   onChange={(e) => setFormData({ ...formData, chequeNo: e.target.value })}
                 />
-              </Box>
-            </Box>
 
-            {/* Bill Summary Footer Box */}
-            <Box sx={{ p: 2.5, bgcolor: mode === 'dark' ? '#1e293b' : '#f1f5f9', borderRadius: 3, border: `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`, mb: 4 }}>
-              <Typography variant="body2">
-                Subtotal (આઇટમ સબટોટલ): <strong>{formatRupees(gstCalcs.rawItemsSubtotal)}</strong>
-              </Typography>
-              {Boolean(gstCalcs.adjustAmount) && (
-                <Typography variant="body2" sx={{ color: gstCalcs.adjustAmount < 0 ? 'error.main' : 'success.main', fontWeight: 600 }}>
-                  Adjust Amount (એડજસ્ટ રકમ): <strong>{gstCalcs.adjustAmount > 0 ? `+${formatRupees(gstCalcs.adjustAmount)}` : formatRupees(gstCalcs.adjustAmount)}</strong>
-                  {gstCalcs.adjustAmount < 0 ? ' (Discount / ઘટાડો)' : ' (Extra Charge / વધારો)'}
-                </Typography>
-              )}
-              {Boolean(gstCalcs.adjustAmount) && (
-                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', my: 0.2 }}>
-                  Adjusted Subtotal (કુલ સબટોટલ): <strong>{formatRupees(gstCalcs.subtotal)}</strong>
-                </Typography>
-              )}
-              {taxEnabled && (
-                <>
-                  <Typography variant="body2" color="text.secondary">
-                    CGST (2.5%): <strong>{formatRupees(gstCalcs.cgst)}</strong>
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    SGST (2.5%): <strong>{formatRupees(gstCalcs.sgst)}</strong>
-                  </Typography>
-                </>
-              )}
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'primary.main', mt: 0.5 }}>
-                Total Bill Amount (કુલ બિલ રકમ): {formatRupees(gstCalcs.totalAmount)}
-              </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  label={language === 'gu' ? 'નોંધ / વિગત (Notes)' : 'Notes / Remarks'}
+                  placeholder={language === 'gu' ? 'દા.ત. ડિસ્કાઉન્ટ, ટ્રાન્સપોર્ટ ખર્ચ કે વિગત' : 'e.g. Discount given or transport details'}
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                />
+              </Paper>
             </Box>
 
             {/* Bottom Form Action Buttons */}
@@ -1698,9 +2247,19 @@ export const PurchasePage: React.FC = () => {
                 gap: 2,
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
-                Total Amount: {formatRupees(gstCalcs.totalAmount)}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 3 }, flexWrap: 'wrap' }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                  Total Amount: {formatRupees(gstCalcs.totalAmount)}
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#10b981' }}>
+                  Total Paid: {formatRupees(Number(formData.paidAmount) || 0)}
+                </Typography>
+                {gstCalcs.pendingAmount > 0 && (
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+                    Pending: {formatRupees(gstCalcs.pendingAmount)}
+                  </Typography>
+                )}
+              </Box>
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button onClick={() => setFormOpen(false)} variant="outlined" size="large" sx={{ px: 3.5, fontWeight: 700, borderRadius: '12px' }}>
                   Cancel
@@ -1718,12 +2277,20 @@ export const PurchasePage: React.FC = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' }, gap: { xs: 1.5, md: 0 }, mb: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' }, gap: { xs: 1.5, md: 0 }, mb: 2.5 }}>
         <Box>
-          <Typography sx={{ fontWeight: 800, color: 'primary.main', fontSize: { xs: '1.15rem', sm: '1.3rem' } }}>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              letterSpacing: '-0.02em',
+              fontSize: '1.42rem',
+            }}
+          >
             {language === 'gu' ? 'માલ ખરીદી મેનેજમેન્ટ' : 'Material Purchase Management'}
           </Typography>
-          <Typography color="text.secondary" sx={{ fontSize: '0.8rem', mt: 0.25 }}>
+          <Typography variant="body2" sx={{ color: mode === 'dark' ? '#94a3b8' : '#64748b', fontSize: '0.86rem', mt: 0.2 }}>
             {language === 'gu' ? 'કાચો માલ ખરીદી હિસાબ, સપ્લાયર ખાતું અને જીએસટી ગણતરી' : 'Track yarn/fabric purchase history, suppliers, pending bills and GST'}
           </Typography>
         </Box>
@@ -1731,19 +2298,21 @@ export const PurchasePage: React.FC = () => {
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, width: { xs: '100%', md: 'auto' }, flexWrap: 'wrap' }}>
           <Button
             variant="outlined"
-            startIcon={<PdfIcon />}
+            startIcon={<PdfIcon sx={{ fontSize: 18 }} />}
             onClick={() => setStatementModalOpen(true)}
             sx={{
-              py: 1,
-              px: 2.2,
-              fontWeight: 700,
-              borderRadius: '10px',
-              bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
+              py: 0.8,
+              px: 2,
+              fontWeight: 600,
+              fontSize: '0.84rem',
+              borderRadius: '8px',
+              textTransform: 'none',
+              bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
               color: mode === 'dark' ? '#f8fafc' : '#0f172a',
-              borderColor: mode === 'dark' ? '#475569' : '#cbd5e1',
+              borderColor: mode === 'dark' ? '#1e293b' : '#e2e8f0',
               '&:hover': {
-                bgcolor: mode === 'dark' ? '#334155' : '#f8fafc',
-                borderColor: '#94a3b8',
+                bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.1)' : '#eff6ff',
+                borderColor: '#2563eb',
               },
             }}
           >
@@ -1751,15 +2320,22 @@ export const PurchasePage: React.FC = () => {
           </Button>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={<AddIcon sx={{ fontSize: 18 }} />}
             onClick={handleOpenCreateForm}
             sx={{
-              py: 1,
-              px: 2.5,
-              fontWeight: 700,
-              borderRadius: '10px',
-              bgcolor: '#4f46e5',
-              '&:hover': { bgcolor: '#4338ca' },
+              py: 0.8,
+              px: 2.2,
+              fontWeight: 600,
+              fontSize: '0.86rem',
+              borderRadius: '8px',
+              bgcolor: '#1d4ed8',
+              color: '#ffffff',
+              textTransform: 'none',
+              boxShadow: '0 2px 6px rgba(29, 78, 216, 0.35)',
+              '&:hover': {
+                bgcolor: '#1e40af',
+                boxShadow: '0 4px 12px rgba(29, 78, 216, 0.45)',
+              },
             }}
           >
             {language === 'gu' ? '+ માલ ખરીદી નોંધો' : '+ Record Purchase'}
@@ -1767,288 +2343,343 @@ export const PurchasePage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Summary Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)', lg: 'repeat(7, 1fr)' }, gap: 1.5, mb: 3 }}>
-        {/* Card 1: TOTAL CHALLAN */}
-        <Card
-          elevation={0}
+      {/* 5 Primary Metric Cards */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' },
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        {/* Card 1: TOTAL PURCHASES (Deep Sapphire Blue Card) */}
+        <Box
           sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(45, 212, 191, 0.3)' : '#ccfbf1'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
+            p: 2.5,
+            borderRadius: '14px',
+            bgcolor: '#1e3a8a',
+            border: '1px solid #2563eb',
+            boxShadow: '0 4px 16px rgba(37, 99, 235, 0.25)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease-in-out',
             '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(45, 212, 191, 0.2)' : '0 4px 12px rgba(13, 148, 136, 0.1)',
               transform: 'translateY(-2px)',
+              boxShadow: '0 6px 20px rgba(37, 99, 235, 0.38)',
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography
               sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(45, 212, 191, 0.15)' : '#ccfbf1',
-                color: mode === 'dark' ? '#2dd4bf' : '#0d9488',
-                borderRadius: '10px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                color: '#93c5fd',
               }}
             >
-              <ChallanIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#5eead4' : '#0f766e', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ ચલાણ' : 'TOTAL CHALLAN'}
+              {language === 'gu' ? 'કુલ ખરીદી રકમ' : 'TOTAL PURCHASES'}
+            </Typography>
+            <BillingIcon sx={{ fontSize: 19, color: '#38bdf8' }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.35rem', sm: '1.45rem', xl: '1.55rem' },
+              fontWeight: 800,
+              color: '#ffffff',
+              lineHeight: 1.2,
+              my: 0.6,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {formatRupees(summaryTotals.totalSubtotal)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', color: '#93c5fd' }}>
+            {language === 'gu' ? 'ગ્રોસ ખરીદી મૂલ્ય' : 'Gross purchase value'}
+          </Typography>
+        </Box>
+
+        {/* Card 2: TOTAL GST */}
+        <Box
+          sx={{
+            p: 2.5,
+            borderRadius: '14px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 16px rgba(37, 99, 235, 0.08)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+              }}
+            >
+              {language === 'gu' ? 'કુલ GST ટેક્સ' : 'TOTAL GST'}
+            </Typography>
+            <TaxIcon sx={{ fontSize: 19, color: '#2563eb' }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.35rem', sm: '1.45rem', xl: '1.55rem' },
+              fontWeight: 800,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              lineHeight: 1.2,
+              my: 0.6,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {formatRupees(summaryTotals.totalTax)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+            {language === 'gu' ? 'લાગુ કરેલ ઇનપુટ ટેક્સ' : 'Input GST tax'}
+          </Typography>
+        </Box>
+
+        {/* Card 3: TOTAL AMOUNT */}
+        <Box
+          sx={{
+            p: 2.5,
+            borderRadius: '14px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 16px rgba(37, 99, 235, 0.08)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+              }}
+            >
+              {language === 'gu' ? 'કુલ રકમ' : 'TOTAL AMOUNT'}
+            </Typography>
+            <AmountIcon sx={{ fontSize: 19, color: '#0284c7' }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.35rem', sm: '1.45rem', xl: '1.55rem' },
+              fontWeight: 800,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              lineHeight: 1.2,
+              my: 0.6,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {formatRupees(summaryTotals.totalAmount)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+            {language === 'gu' ? 'ટેક્સ સહિત કુલ રકમ' : 'Total with taxes'}
+          </Typography>
+        </Box>
+
+        {/* Card 4: TOTAL PAID (New box right side of TOTAL AMOUNT) */}
+        <Box
+          sx={{
+            p: 2.5,
+            borderRadius: '14px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 16px rgba(16, 185, 129, 0.12)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+              }}
+            >
+              {language === 'gu' ? 'કુલ ચૂકવેલ' : 'TOTAL PAID'}
+            </Typography>
+            <PaidIcon sx={{ fontSize: 19, color: '#10b981' }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.35rem', sm: '1.45rem', xl: '1.55rem' },
+              fontWeight: 800,
+              color: '#10b981',
+              lineHeight: 1.2,
+              my: 0.6,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {formatRupees(summaryTotals.paidAmount)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+            {language === 'gu' ? 'સંપૂર્ણ ચૂકવેલ રકમ' : 'Settled amount'}
+          </Typography>
+        </Box>
+
+        {/* Card 5: TOTAL PENDING */}
+        <Box
+          sx={{
+            p: 2.5,
+            borderRadius: '14px',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            transition: 'all 0.15s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 16px rgba(245, 158, 11, 0.12)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+              }}
+            >
+              {language === 'gu' ? 'સપ્લાયર બાકી રકમ' : 'TOTAL PENDING'}
+            </Typography>
+            <PendingIcon sx={{ fontSize: 19, color: '#f59e0b' }} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.35rem', sm: '1.45rem', xl: '1.55rem' },
+              fontWeight: 800,
+              color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+              lineHeight: 1.2,
+              my: 0.6,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {formatRupees(summaryTotals.pendingAmount)}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+            {language === 'gu' ? 'ચૂકવવાપાત્ર બાકી' : 'Payable outstanding'}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Secondary KPI Strip Banner (Matching Image 1) */}
+      <Card
+        elevation={0}
+        sx={{
+          p: 2,
+          px: 2.5,
+          mb: 2.5,
+          borderRadius: '14px',
+          bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+          border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: { xs: 2, md: 3 },
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: { xs: 2.5, md: 4 } }}>
+          {/* TOTAL CHALLANS */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <ChallanIcon sx={{ fontSize: 22, color: '#2563eb' }} />
+            <Box>
+              <Typography sx={{ fontSize: '0.675rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                {language === 'gu' ? 'કુલ ખરીદી ચલાણ' : 'TOTAL CHALLANS'}
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#2dd4bf' : '#0d9488', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <Typography sx={{ fontSize: '1.08rem', fontWeight: 800, color: mode === 'dark' ? '#f8fafc' : '#0f172a', lineHeight: 1.2 }}>
                 {summaryTotals.totalChallanCount} {language === 'gu' ? 'ચલાણ' : summaryTotals.totalChallanCount === 1 ? 'Challan' : 'Challans'}
               </Typography>
             </Box>
           </Box>
-        </Card>
 
-        {/* Card 2: TOTAL PURCHASES */}
-        <Card
-          elevation={0}
+          <Box sx={{ display: { xs: 'none', sm: 'block' }, height: 36, width: '1px', bgcolor: mode === 'dark' ? '#1e293b' : '#e2e8f0' }} />
+
+          {/* TOTAL INVOICES */}
+          <Box>
+            <Typography sx={{ fontSize: '0.675rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+              {language === 'gu' ? 'કુલ ખરીદી બિલ' : 'TOTAL INVOICES'}
+            </Typography>
+            <Typography sx={{ fontSize: '1.08rem', fontWeight: 800, color: mode === 'dark' ? '#f8fafc' : '#0f172a', lineHeight: 1.2, mt: 0.1 }}>
+              {summaryTotals.totalInvoices} {language === 'gu' ? 'બિલ' : summaryTotals.totalInvoices === 1 ? 'Bill' : 'Bills'}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: { xs: 'none', md: 'block' }, height: 36, width: '1px', bgcolor: mode === 'dark' ? '#1e293b' : '#e2e8f0' }} />
+
+          {/* TOTAL PAID */}
+          <Box>
+            <Typography sx={{ fontSize: '0.675rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+              {language === 'gu' ? 'ચુકવેલ પેમેન્ટ' : 'TOTAL PAID'}
+            </Typography>
+            <Typography sx={{ fontSize: '1.15rem', fontWeight: 800, color: '#10b981', lineHeight: 1.2 }}>
+              {formatRupees(summaryTotals.paidAmount)}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Statement / Actions Button */}
+        <Button
+          variant="outlined"
+          startIcon={<PdfIcon sx={{ fontSize: 16 }} />}
+          onClick={() => setStatementModalOpen(true)}
           sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(56, 189, 248, 0.3)' : '#bae6fd'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
+            borderRadius: '8px',
+            borderColor: mode === 'dark' ? '#1e293b' : '#e2e8f0',
+            bgcolor: mode === 'dark' ? '#111827' : '#ffffff',
+            color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+            textTransform: 'none',
+            fontWeight: 600,
+            fontSize: '0.84rem',
+            py: 0.75,
+            px: 2,
+            whiteSpace: 'nowrap',
             '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(56, 189, 248, 0.2)' : '0 4px 12px rgba(2, 132, 199, 0.1)',
-              transform: 'translateY(-2px)',
+              borderColor: '#2563eb',
+              bgcolor: mode === 'dark' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(37, 99, 235, 0.05)',
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(56, 189, 248, 0.15)' : '#e0f2fe',
-                color: mode === 'dark' ? '#38bdf8' : '#0284c7',
-                borderRadius: '10px',
-              }}
-            >
-              <InvoiceIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#7dd3fc' : '#0369a1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ ખરીદી બિલ' : 'TOTAL PURCHASES'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#38bdf8' : '#0284c7', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {summaryTotals.totalInvoices} {language === 'gu' ? 'બિલ' : summaryTotals.totalInvoices === 1 ? 'Bill' : 'Bills'}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Card 3: TOTAL BILLING */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(192, 132, 252, 0.3)' : '#e9d5ff'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(192, 132, 252, 0.2)' : '0 4px 12px rgba(147, 51, 234, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(192, 132, 252, 0.15)' : '#f3e8ff',
-                color: mode === 'dark' ? '#c084fc' : '#9333ea',
-                borderRadius: '10px',
-              }}
-            >
-              <BillingIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#c084fc' : '#7e22ce', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ ખરીદી રકમ' : 'TOTAL BILLING'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#c084fc' : '#9333ea', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.totalSubtotal)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Card 4: TOTAL TAX / GST */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(251, 146, 60, 0.3)' : '#fed7aa'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(251, 146, 60, 0.2)' : '0 4px 12px rgba(234, 88, 12, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(251, 146, 60, 0.15)' : '#fff7ed',
-                color: mode === 'dark' ? '#fb923c' : '#ea580c',
-                borderRadius: '10px',
-              }}
-            >
-              <TaxIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#fdba74' : '#c2410c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ GST ટેક્સ' : 'TOTAL GST'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#fb923c' : '#ea580c', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.totalTax)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Card 5: TOTAL AMOUNT (WITH TAX) */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(129, 140, 248, 0.3)' : '#c7d2fe'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(129, 140, 248, 0.2)' : '0 4px 12px rgba(79, 70, 229, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(129, 140, 248, 0.15)' : '#eef2ff',
-                color: mode === 'dark' ? '#818cf8' : '#4f46e5',
-                borderRadius: '10px',
-              }}
-            >
-              <AmountIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#a5b4fc' : '#4338ca', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'કુલ રકમ (ટેક્સ સહિત)' : 'TOTAL AMOUNT'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#818cf8' : '#4f46e5', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.totalAmount)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Card 6: TOTAL PENDING */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(248, 113, 113, 0.3)' : '#fecdd3'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(248, 113, 113, 0.2)' : '0 4px 12px rgba(225, 29, 72, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(248, 113, 113, 0.15)' : '#fff1f2',
-                color: mode === 'dark' ? '#f87171' : '#dc2626',
-                borderRadius: '10px',
-              }}
-            >
-              <PendingIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#fca5a5' : '#b91c1c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'બાકી રકમ' : 'TOTAL PENDING'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#f87171' : '#dc2626', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.pendingAmount)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-
-        {/* Card 7: TOTAL PAID */}
-        <Card
-          elevation={0}
-          sx={{
-            px: 1.75,
-            py: 1.5,
-            borderRadius: '16px',
-            border: `1.5px solid ${mode === 'dark' ? 'rgba(74, 222, 128, 0.3)' : '#bbf7d0'}`,
-            bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff',
-            boxShadow: mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-            transition: 'all 0.2s ease-in-out',
-            '&:hover': {
-              boxShadow: mode === 'dark' ? '0 4px 12px rgba(74, 222, 128, 0.2)' : '0 4px 12px rgba(22, 163, 74, 0.1)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: mode === 'dark' ? 'rgba(74, 222, 128, 0.15)' : '#f0fdf4',
-                color: mode === 'dark' ? '#4ade80' : '#16a34a',
-                borderRadius: '10px',
-              }}
-            >
-              <PaidIcon sx={{ fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" sx={{ color: mode === 'dark' ? '#86efac' : '#15803d', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', fontSize: '0.675rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {language === 'gu' ? 'ચુકવેલ રકમ' : 'TOTAL PAID'}
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: mode === 'dark' ? '#4ade80' : '#16a34a', mt: 0.25, fontSize: { xs: '0.95rem', sm: '1.05rem', xl: '1.15rem' }, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {formatRupees(summaryTotals.paidAmount)}
-              </Typography>
-            </Box>
-          </Box>
-        </Card>
-      </Box>
+          {language === 'gu' ? 'સપ્લાયર સ્ટેટમેન્ટ PDF' : 'Supplier Statement PDF'}
+        </Button>
+      </Card>
 
       {/* Filter Bar */}
       <Card
@@ -2108,32 +2739,130 @@ export const PurchasePage: React.FC = () => {
             </ToggleButtonGroup>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Chip
-              size="small"
-              label={
-                viewMode === 'party'
-                  ? (language === 'gu' ? `પાર્ટી ગ્રુપિંગ: ${partyGroups.length} પાર્ટીઓ` : `Party Grouping: ${partyGroups.length} Parties`)
-                  : (language === 'gu' ? `એન્ટ્રી યાદી: ${sortedPurchases.length} ખરીદીઓ` : `Entry List: ${sortedPurchases.length} Purchases`)
-              }
-              color={viewMode === 'party' ? 'primary' : 'default'}
-              variant="outlined"
-              sx={{ fontWeight: 700, borderRadius: '8px' }}
-            />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                color: mode === 'dark' ? '#94a3b8' : '#64748b',
+              }}
+            >
+              {viewMode === 'party'
+                ? (language === 'gu'
+                    ? `${partyGroups.length} પાર્ટી ગ્રુપ · ${sortedPurchases.length} ખરીદીઓ`
+                    : `${partyGroups.length} party groups · ${sortedPurchases.length} purchases`)
+                : (language === 'gu'
+                    ? `${sortedPurchases.length} ખરીદીઓ`
+                    : `${sortedPurchases.length} purchases`)}
+            </Typography>
             <Button
               size="small"
               variant="outlined"
               color="primary"
               startIcon={allExpanded ? <CollapseAllIcon fontSize="small" /> : <ExpandAllIcon fontSize="small" />}
               onClick={toggleExpandAll}
-              sx={{ fontWeight: 800, borderRadius: '8px', textTransform: 'none', px: 1.5, py: 0.3, fontSize: '0.78rem' }}
+              sx={{
+                fontWeight: 700,
+                borderRadius: '8px',
+                textTransform: 'none',
+                px: 1.5,
+                py: 0.35,
+                fontSize: '0.78rem',
+              }}
             >
               {language === 'gu'
-                ? (allExpanded ? '▲ ચલાણ વિગત છુપાવો' : '▼ બધા ચલાણ બતાવો')
-                : (allExpanded ? '▲ Collapse Details' : '▼ Expand All Details')}
+                ? (allExpanded ? 'ચલાણ વિગત છુપાવો' : 'બધા ચલાણ બતાવો')
+                : (allExpanded ? 'Collapse Details' : 'Expand All Details')}
             </Button>
           </Box>
         </Box>
+
+        {/* Month Separation Tabs when 2 or more months are selected in Party View */}
+        {viewMode === 'party' && distinctMonthKeys.length > 1 && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 2,
+              p: 1.25,
+              borderRadius: '12px',
+              bgcolor: mode === 'dark' ? '#0f172a' : '#f8fafc',
+              border: `1px solid ${mode === 'dark' ? '#1e293b' : '#e2e8f0'}`,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                color: mode === 'dark' ? '#94a3b8' : '#475569',
+                px: 0.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
+              <CalendarMonthIcon sx={{ fontSize: 16, color: '#2563eb' }} />
+              {language === 'gu' ? 'મહિના મુજબ ચલાણ અલગ જુઓ:' : 'Separate Month Challans:'}
+            </Typography>
+
+            <Button
+              size="small"
+              onClick={() => setActivePartyMonthTab('ALL')}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                borderRadius: '8px',
+                px: 1.5,
+                py: 0.45,
+                bgcolor: activePartyMonthTab === 'ALL' ? '#2563eb' : (mode === 'dark' ? '#1e293b' : '#ffffff'),
+                color: activePartyMonthTab === 'ALL' ? '#ffffff' : (mode === 'dark' ? '#cbd5e1' : '#334155'),
+                border: '1px solid',
+                borderColor: activePartyMonthTab === 'ALL' ? '#2563eb' : (mode === 'dark' ? '#334155' : '#cbd5e1'),
+                boxShadow: activePartyMonthTab === 'ALL' ? '0 1px 3px rgba(37,99,235,0.3)' : 'none',
+                '&:hover': {
+                  bgcolor: activePartyMonthTab === 'ALL' ? '#1d4ed8' : (mode === 'dark' ? '#334155' : '#f1f5f9'),
+                },
+              }}
+            >
+              {language === 'gu' ? `બધા મહિના (${partyGroups.length})` : `All Months (${partyGroups.length})`}
+            </Button>
+
+            {distinctMonthKeys.map((mKey) => {
+              const stats = monthStatsMap[mKey];
+              const isSelected = activePartyMonthTab === mKey;
+              const mLabel = stats?.monthLabel || (mKey !== 'All' ? getMonthLabel(mKey, language) : 'All');
+              return (
+                <Button
+                  key={mKey}
+                  size="small"
+                  onClick={() => setActivePartyMonthTab(mKey)}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    borderRadius: '8px',
+                    px: 1.5,
+                    py: 0.45,
+                    bgcolor: isSelected ? '#2563eb' : (mode === 'dark' ? '#1e293b' : '#ffffff'),
+                    color: isSelected ? '#ffffff' : (mode === 'dark' ? '#93c5fd' : '#1d4ed8'),
+                    border: '1px solid',
+                    borderColor: isSelected ? '#2563eb' : (mode === 'dark' ? '#334155' : '#bfdbfe'),
+                    boxShadow: isSelected ? '0 1px 3px rgba(37,99,235,0.3)' : 'none',
+                    '&:hover': {
+                      bgcolor: isSelected ? '#1d4ed8' : (mode === 'dark' ? '#334155' : '#eff6ff'),
+                    },
+                  }}
+                >
+                  {mLabel} ({stats?.challanCount || 0} {language === 'gu' ? 'ચલાણ' : 'Challans'})
+                </Button>
+              );
+            })}
+          </Box>
+        )}
 
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: 'center' }}>
           {/* Search Box */}
@@ -2253,14 +2982,29 @@ export const PurchasePage: React.FC = () => {
               Active Filters:
             </Typography>
 
-            {selectedMonth !== 'ALL' && selectedMonth !== 'All' && (
-              <Chip
-                size="small"
-                label={`Month: ${selectedMonth}`}
-                color="primary"
-                variant="outlined"
-                sx={{ borderRadius: '8px', fontWeight: 600, fontSize: '0.725rem' }}
-              />
+            {selectedMonths.length > 0 ? (
+              selectedMonths.map((ym) => (
+                <Chip
+                  key={ym}
+                  size="small"
+                  label={`Month: ${getMonthLabel(ym, language)}`}
+                  color="primary"
+                  variant="outlined"
+                  onDelete={() => toggleMonth(ym)}
+                  sx={{ borderRadius: '8px', fontWeight: 600, fontSize: '0.725rem' }}
+                />
+              ))
+            ) : (
+              selectedMonth !== 'ALL' && selectedMonth !== 'All' && (
+                <Chip
+                  size="small"
+                  label={`Month: ${getMonthLabel(selectedMonth, language)}`}
+                  color="primary"
+                  variant="outlined"
+                  onDelete={() => setSelectedMonth('ALL')}
+                  sx={{ borderRadius: '8px', fontWeight: 600, fontSize: '0.725rem' }}
+                />
+              )
             )}
 
             {selectedPartyFilter !== 'ALL' && (
@@ -2682,6 +3426,43 @@ export const PurchasePage: React.FC = () => {
                               </Button>
                             </Box>
                           )}
+                          {!partyHasOtherPurchases && purchases.length > 0 && selectedMonth !== 'ALL' && selectedMonth !== 'All' && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, bgcolor: mode === 'dark' ? '#1e293b' : '#f0f9ff', p: 2.5, borderRadius: 2.5, border: '1px solid #bae6fd', maxWidth: 620, width: '100%' }}>
+                              <Typography variant="body2" sx={{ color: mode === 'dark' ? '#93c5fd' : '#0369a1', fontWeight: 700, textAlign: 'center' }}>
+                                {language === 'gu'
+                                  ? `પસંદ કરેલ મહિના (${getMonthLabel(selectedMonth, language)}) માં કોઈ ખરીદી રેકોર્ડ નથી. અન્ય મહિનાઓમાં કુલ ${purchases.length} ખરીદી રેકોર્ડ ઉપલબ્ધ છે.`
+                                  : `No purchase records in ${getMonthLabel(selectedMonth, language)}. A total of ${purchases.length} purchase(s) exist in other months.`}
+                              </Typography>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="primary"
+                                  onClick={() => setSelectedMonth('ALL')}
+                                  sx={{ textTransform: 'none', fontWeight: 800, borderRadius: '8px' }}
+                                >
+                                  {language === 'gu' ? `તમામ મહિના જુઓ (${purchases.length})` : `View All Months (${purchases.length})`}
+                                </Button>
+                                {allMonthsWithPurchases.map(({ mKey, count, label }) => (
+                                  <Button
+                                    key={mKey}
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={() => setSelectedMonth(mKey)}
+                                    sx={{
+                                      textTransform: 'none',
+                                      fontWeight: 700,
+                                      borderRadius: '8px',
+                                      borderColor: mode === 'dark' ? '#3b82f6' : '#2563eb',
+                                      color: mode === 'dark' ? '#93c5fd' : '#1d4ed8',
+                                    }}
+                                  >
+                                    {label} ({count})
+                                  </Button>
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -2691,14 +3472,67 @@ export const PurchasePage: React.FC = () => {
                 if (viewMode === 'party') {
                   const borderCell = `1px solid ${mode === 'dark' ? '#334155' : '#e2e8f0'}`;
 
-                  return partyGroups.map((group, gIdx) => {
+                  return displayedPartyGroups.map((group, gIdx) => {
                     const isSingleBill = group.purchases.length === 1;
                     const primaryBill = group.purchases[0];
                     const primaryStatus = primaryBill ? getPurchaseStatus(primaryBill) : 'PENDING';
                     const isGroupExpanded = group.purchases.some(p => (expandedBills[p.id] !== undefined ? expandedBills[p.id] : allExpanded));
 
+                    // Show Month Section Header Banner if multiple months are displayed and All tab is active
+                    const showMonthHeader =
+                      activePartyMonthTab === 'ALL' &&
+                      distinctMonthKeys.length > 1 &&
+                      (gIdx === 0 || displayedPartyGroups[gIdx - 1].monthKey !== group.monthKey);
+
+                    const monthStats = monthStatsMap[group.monthKey];
+
                     return (
-                      <React.Fragment key={`party-group-${group.partyName}-${gIdx}`}>
+                      <React.Fragment key={`party-group-${group.groupKey}-${gIdx}`}>
+                        {/* Month Section Header Banner for Separate Month Challans */}
+                        {showMonthHeader && (
+                          <TableRow key={`month-header-banner-${group.monthKey}-${gIdx}`}>
+                            <TableCell
+                              colSpan={12}
+                              sx={{
+                                py: 1.4,
+                                px: 2,
+                                bgcolor: mode === 'dark' ? 'rgba(30, 27, 75, 0.75)' : '#eff6ff',
+                                borderTop: `2px solid ${mode === 'dark' ? '#4f46e5' : '#93c5fd'}`,
+                                borderBottom: `2px solid ${mode === 'dark' ? '#3730a3' : '#bfdbfe'}`,
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+                                  <CalendarMonthIcon sx={{ color: mode === 'dark' ? '#818cf8' : '#2563eb', fontSize: 20 }} />
+                                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: mode === 'dark' ? '#e0e7ff' : '#1e3a8a' }}>
+                                    {group.monthLabel || getMonthLabel(group.monthKey, language)}
+                                  </Typography>
+                                  <Box component="span" sx={{ color: mode === 'dark' ? '#6366f1' : '#94a3b8', fontSize: '0.8rem', userSelect: 'none' }}>
+                                    ·
+                                  </Box>
+                                  <Typography sx={{ fontSize: '0.8rem', color: mode === 'dark' ? '#c7d2fe' : '#475569', fontWeight: 600 }}>
+                                    {monthStats?.challanCount || group.challanCount} {language === 'gu' ? 'ચલાણ' : 'Challans'}
+                                  </Typography>
+                                  <Box component="span" sx={{ color: mode === 'dark' ? '#6366f1' : '#94a3b8', fontSize: '0.8rem', userSelect: 'none' }}>
+                                    ·
+                                  </Box>
+                                  <Typography sx={{ fontSize: '0.8rem', color: mode === 'dark' ? '#c7d2fe' : '#475569', fontWeight: 600 }}>
+                                    {monthStats?.partyCount || 1} {language === 'gu' ? 'પાર્ટીઓ' : 'Parties'}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                                    {language === 'gu' ? 'મહિનાનો કુલ ખર્ચ:' : 'Month Total:'}
+                                  </Typography>
+                                  <Typography sx={{ color: mode === 'dark' ? '#4ade80' : '#15803d', fontWeight: 800, fontSize: '0.92rem' }}>
+                                    {formatRupees(monthStats?.totalAmount || group.totalAmount)}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        )}
+
                         {/* Party Group Table Row */}
                         <TableRow
                           sx={{
@@ -2778,13 +3612,11 @@ export const PurchasePage: React.FC = () => {
 
                           {/* CHALLAN */}
                           <TableCell align="center" sx={{ py: 1.2, px: 1, borderRight: borderCell }}>
-                            <Chip
-                              clickable
+                            <Button
                               size="small"
-                              icon={isGroupExpanded ? <ExpandLessIcon sx={{ fontSize: '14px !important' }} /> : <ExpandMoreIcon sx={{ fontSize: '14px !important' }} />}
-                              label={`${group.challanCount} ${language === 'gu' ? 'ચલાણ' : 'Challans'}`}
+                              variant={isGroupExpanded ? "contained" : "outlined"}
                               color="primary"
-                              variant={isGroupExpanded ? "filled" : "outlined"}
+                              endIcon={isGroupExpanded ? <ExpandLessIcon sx={{ fontSize: '14px !important' }} /> : <ExpandMoreIcon sx={{ fontSize: '14px !important' }} />}
                               onClick={() => {
                                 const groupPurchaseIds = group.purchases.map(p => p.id);
                                 const nextState = !isGroupExpanded;
@@ -2794,8 +3626,19 @@ export const PurchasePage: React.FC = () => {
                                   return copy;
                                 });
                               }}
-                              sx={{ fontWeight: 800, height: 24, fontSize: '0.72rem', cursor: 'pointer' }}
-                            />
+                              sx={{
+                                fontWeight: 700,
+                                height: 26,
+                                fontSize: '0.72rem',
+                                borderRadius: '6px',
+                                px: 1,
+                                py: 0,
+                                textTransform: 'none',
+                                minWidth: 0,
+                              }}
+                            >
+                              {group.challanCount} {language === 'gu' ? 'ચલાણ' : 'Challans'}
+                            </Button>
                           </TableCell>
 
                           {/* ACTIONS */}
@@ -2813,7 +3656,13 @@ export const PurchasePage: React.FC = () => {
                                 <Button
                                   size="small"
                                   startIcon={<EditIcon sx={{ fontSize: '13px !important' }} />}
-                                  onClick={() => handleOpenEditForm(primaryBill)}
+                                  onClick={() => {
+                                    if (group.purchases.length > 1) {
+                                      handleConsolidatePartyGroup(group);
+                                    } else {
+                                      handleOpenEditForm(primaryBill);
+                                    }
+                                  }}
                                   sx={{ textTransform: 'none', px: 1, py: 0.3, minWidth: 0, fontSize: '0.72rem', fontWeight: 600, borderRadius: '6px', bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff', color: mode === 'dark' ? '#38bdf8' : '#0284c7', border: '1px solid #cbd5e1' }}
                                 >
                                   {language === 'gu' ? 'સુધારો' : 'Edit'}
@@ -2821,7 +3670,11 @@ export const PurchasePage: React.FC = () => {
                                 <Button
                                   size="small"
                                   startIcon={<DeleteIcon sx={{ fontSize: '13px !important' }} />}
-                                  onClick={() => { setPurchaseToDelete(primaryBill.id); setDeleteOpen(true); }}
+                                  onClick={() => {
+                                    const groupIds = Array.from(new Set(group.purchases.map(p => (p as any).originalId || p.id.replace(/_\d{4}-\d{2}$/, ''))));
+                                    setPurchaseToDelete(groupIds.length > 1 ? groupIds : groupIds[0]);
+                                    setDeleteOpen(true);
+                                  }}
                                   sx={{ textTransform: 'none', px: 1, py: 0.3, minWidth: 0, fontSize: '0.72rem', fontWeight: 600, borderRadius: '6px', bgcolor: mode === 'dark' ? '#1e293b' : '#ffffff', color: mode === 'dark' ? '#f87171' : '#dc2626', border: '1px solid #cbd5e1' }}
                                 >
                                   {language === 'gu' ? 'કાઢી નાખો' : 'Delete'}
@@ -2869,7 +3722,7 @@ export const PurchasePage: React.FC = () => {
                                       >
                                         <Box sx={{ px: 2, py: 0.8, bgcolor: mode === 'dark' ? '#334155' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #dbeafe' }}>
                                           <Typography variant="caption" sx={{ fontWeight: 800, color: 'primary.main', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.75rem' }}>
-                                            📦 {language === 'gu' ? 'ચલાણ અને મટીરીયલ વિગત વાઇઝ બ્રેકડાઉન' : 'Challan & Material Item Breakdown'} ({itemCount} {language === 'gu' ? 'આઇટમો' : 'Items'} across {uniqueChallansInBill.size || 1} {language === 'gu' ? 'ચલાણ' : 'Challans'})
+                                            📦 {language === 'gu' ? 'ચલાણ અને મટીરીયલ વિગત વાઇઝ બ્રેકડાઉન' : 'Challan & Material Item Breakdown'} ({itemCount} {language === 'gu' ? 'આઇટમો' : 'Items'} across {uniqueChallansInBill.size || 1} {language === 'gu' ? 'ચલાણ' : 'Challans'}){group.monthLabel ? ` • [${group.monthLabel}]` : ""}
                                           </Typography>
                                           <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
                                             {language === 'gu' ? 'બિલ નં.' : 'Bill No'}: <strong>{p.purchaseNo}</strong>
@@ -3305,7 +4158,7 @@ export const PurchasePage: React.FC = () => {
                                 size="small"
                                 startIcon={<DeleteIcon sx={{ fontSize: '13px !important' }} />}
                                 onClick={() => {
-                                  setPurchaseToDelete(p.id);
+                                  setPurchaseToDelete((p as any).originalId || p.id.replace(/_\d{4}-\d{2}$/, ''));
                                   setDeleteOpen(true);
                                 }}
                                 sx={{
@@ -3341,7 +4194,7 @@ export const PurchasePage: React.FC = () => {
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[10, 25, 50, 100]}
+          rowsPerPageOptions={[10, 20, 25, 50, 100]}
           component="div"
           count={sortedPurchases.length}
           rowsPerPage={rowsPerPage}
@@ -3362,11 +4215,21 @@ export const PurchasePage: React.FC = () => {
 
       <ConfirmationDialog
         open={deleteOpen}
-        title="Delete Purchase Record?"
-        message="Are you sure you want to delete this purchase entry?"
+        title={language === 'gu' ? 'ખરીદી રેકોર્ડ કાઢી નાખવો છે?' : 'Delete Purchase Record?'}
+        message={language === 'gu' ? 'શું તમે ખરેખર આ ખરીદી એન્ટ્રી કાઢી નાખવા માંગો છો? આ પ્રક્રિયા ડેટાબેઝમાંથી કાયમ માટે ડિલીટ કરશે.' : 'Are you sure you want to permanently delete this purchase record from the database?'}
+        confirmText={language === 'gu' ? 'હા, કાઢી નાખો' : 'Confirm Delete'}
+        cancelText={language === 'gu' ? 'રદ કરો' : 'Cancel'}
         onConfirm={handleDeleteConfirm}
-        onClose={() => setDeleteOpen(false)}
+        onClose={() => {
+          setDeleteOpen(false);
+          setPurchaseToDelete(null);
+        }}
+        onCancel={() => {
+          setDeleteOpen(false);
+          setPurchaseToDelete(null);
+        }}
       />
+
 
       {/* View Purchase Details Dialog */}
       <Dialog open={viewOpen} onClose={() => setViewOpen(false)} maxWidth="md" fullWidth>
@@ -3521,7 +4384,13 @@ export const PurchasePage: React.FC = () => {
         onClose={() => setStatementModalOpen(false)}
         purchases={sortedPurchases}
         selectedMonth={selectedMonth}
-        monthLabel={selectedMonth === 'ALL' || selectedMonth === 'All' ? 'All Months' : getMonthLabel(selectedMonth, language)}
+        monthLabel={
+          selectedMonths.length > 0
+            ? (selectedMonths.length === 1
+                ? getMonthLabel(selectedMonths[0], language)
+                : selectedMonths.map((m) => getMonthLabel(m, language)).join(', '))
+            : (selectedMonth === 'ALL' || selectedMonth === 'All' ? 'All Months' : getMonthLabel(selectedMonth, language))
+        }
         selectedPartyFilter={selectedPartyFilter}
         selectedStatusFilter={selectedStatusFilter}
         summaryTotals={summaryTotals}

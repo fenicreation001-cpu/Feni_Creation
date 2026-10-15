@@ -1,3 +1,20 @@
+import {
+  Add as AddIcon,
+  Print as PrintIcon,
+  PictureAsPdf as PdfIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Payments as PayIcon,
+  Visibility as ViewIcon,
+  ViewAgenda as GroupedIcon,
+  TableRows as TableIcon,
+  Search as SearchIcon,
+  AccountBalanceWallet as BaseSalaryIcon,
+  Payments as UpadIcon,
+  Paid as PaidIcon,
+  HourglassTop as PendingIcon,
+  Clear as ClearIcon,
+} from '@mui/icons-material';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
@@ -27,21 +44,21 @@ import {
   Checkbox,
   InputAdornment,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import PrintIcon from '@mui/icons-material/Print';
-import PdfIcon from '@mui/icons-material/PictureAsPdf';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PayIcon from '@mui/icons-material/Payments';
-import ViewIcon from '@mui/icons-material/Visibility';
-import GroupedIcon from '@mui/icons-material/ViewAgenda';
-import TableIcon from '@mui/icons-material/TableRows';
-import SearchIcon from '@mui/icons-material/Search';
-import BaseSalaryIcon from '@mui/icons-material/AccountBalanceWallet';
-import UpadIcon from '@mui/icons-material/Payments';
-import PaidIcon from '@mui/icons-material/Paid';
-import PendingIcon from '@mui/icons-material/HourglassTop';
-import ClearIcon from '@mui/icons-material/Clear';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Worker } from '../types';
 import { formatRupees, formatDate, formatSalaryMonth, translateRole, translateStatus } from '../utils/formatters';
 import { apiClient } from '../utils/api';
@@ -836,7 +853,7 @@ export const WorkersPage: React.FC = () => {
                             <TableCell
                               onClick={() => handleSort('name')}
                               sx={{
-                                color: sortColumn === 'name' ? '#4f46e5' : mode === 'dark' ? '#94a3b8' : '#64748b',
+                                color: sortColumn === 'name' ? '#2563eb' : mode === 'dark' ? '#94a3b8' : '#64748b',
                                 fontWeight: 800,
                                 fontSize: '0.75rem',
                                 textTransform: 'uppercase',
@@ -869,7 +886,7 @@ export const WorkersPage: React.FC = () => {
                               align="right"
                               onClick={() => handleSort('payable')}
                               sx={{
-                                color: sortColumn === 'payable' ? '#4f46e5' : mode === 'dark' ? '#94a3b8' : '#64748b',
+                                color: sortColumn === 'payable' ? '#2563eb' : mode === 'dark' ? '#94a3b8' : '#64748b',
                                 fontWeight: 800,
                                 fontSize: '0.75rem',
                                 textTransform: 'uppercase',

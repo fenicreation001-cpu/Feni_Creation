@@ -1,3 +1,22 @@
+import {
+  ContentCopy as CopyIcon,
+  Check as CheckIcon,
+  PlayArrow as PlayIcon,
+  ExpandMore as ExpandMoreIcon,
+  Code as CodeIcon,
+  PhoneAndroid as AndroidIcon,
+  Dns as ServerIcon,
+  Refresh as RefreshIcon,
+  CheckCircle as OnlineIcon,
+  Warning as OfflineIcon,
+  People as PartyIcon,
+  ReceiptLong as BillingIcon,
+  ShoppingCart as PurchaseIcon,
+  Badge as WorkerIcon,
+  AccountBalanceWallet as PaymentIcon,
+  Settings as SettingIcon,
+  VpnKey as AuthIcon,
+} from '@mui/icons-material';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -17,23 +36,23 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import CopyIcon from '@mui/icons-material/ContentCopy';
-import CheckIcon from '@mui/icons-material/Check';
-import PlayIcon from '@mui/icons-material/PlayArrow';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CodeIcon from '@mui/icons-material/Code';
-import AndroidIcon from '@mui/icons-material/PhoneAndroid';
-import ServerIcon from '@mui/icons-material/Dns';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import OnlineIcon from '@mui/icons-material/CheckCircle';
-import OfflineIcon from '@mui/icons-material/Warning';
-import PartyIcon from '@mui/icons-material/People';
-import BillingIcon from '@mui/icons-material/ReceiptLong';
-import PurchaseIcon from '@mui/icons-material/ShoppingCart';
-import WorkerIcon from '@mui/icons-material/Badge';
-import PaymentIcon from '@mui/icons-material/AccountBalanceWallet';
-import SettingIcon from '@mui/icons-material/Settings';
-import AuthIcon from '@mui/icons-material/VpnKey';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 interface EndpointDoc {
   id: string;
@@ -85,7 +104,15 @@ export const ApiDocsPage: React.FC = () => {
     try {
       let url = ep.endpoint;
       if (url.includes(':id')) {
-        url = url.replace(':id', 'p1');
+        if (ep.category === 'purchase' || url.includes('material') || url.includes('purchase')) {
+          url = url.replace(':id', 'PUR-201');
+        } else if (ep.category === 'worker' || url.includes('worker')) {
+          url = url.replace(':id', 'w1');
+        } else if (ep.category === 'billing' || url.includes('bill')) {
+          url = url.replace(':id', 'FC-2026-001');
+        } else {
+          url = url.replace(':id', 'p1');
+        }
       }
 
       const options: RequestInit = {
@@ -483,21 +510,58 @@ export const ApiDocsPage: React.FC = () => {
       category: 'purchase',
       categoryLabel: 'Material Purchase',
       method: 'POST',
-      endpoint: '/api/purchases',
-      title: 'Record Material Purchase',
-      description: 'Save new raw material purchase entry from Android app.',
+      endpoint: '/api/materials',
+      title: 'Record Material Purchase (Create)',
+      description: 'Save new raw material / yarn / thread purchase entry directly to MongoDB Atlas. Also available at /api/purchases.',
       requestBody: {
-        id: 'pur_' + Date.now(),
         purchaseNo: 'PUR-202',
         date: '2026-08-05',
         supplierName: 'Surat Yarn Traders',
-        itemName: 'Polyester Silk Cloth Roll',
-        quantity: 50,
-        unit: 'Meters',
-        rate: 120,
-        totalAmount: 6000,
+        materialName: 'Polyester Silk Cloth Roll',
+        items: [
+          {
+            description: 'Polyester Silk Cloth Roll',
+            quantity: 50,
+            unit: 'Meters',
+            rate: 120,
+            amount: 6000,
+          },
+        ],
+        subtotal: 6000,
+        cgst: 150,
+        sgst: 150,
+        totalAmount: 6300,
+        paidAmount: 6300,
+        pendingAmount: 0,
+        status: 'Paid',
       },
-      responseBody: { id: 'pur_1700000', purchaseNo: 'PUR-202', totalAmount: 6000 },
+      responseBody: { success: true, id: 'pur_1700000', purchaseNo: 'PUR-202', totalAmount: 6300 },
+    },
+    {
+      id: 'purchase-update',
+      category: 'purchase',
+      categoryLabel: 'Material Purchase',
+      method: 'PUT',
+      endpoint: '/api/materials/:id',
+      title: 'Update Material Purchase (Update)',
+      description: 'Update existing raw material purchase details, items, or payment status. Also available at /api/purchases/:id.',
+      requestBody: {
+        paidAmount: 6300,
+        pendingAmount: 0,
+        status: 'Paid',
+        notes: 'Full payment cleared via Bank NEFT',
+      },
+      responseBody: { success: true, message: 'Material updated successfully in MongoDB Atlas' },
+    },
+    {
+      id: 'purchase-delete',
+      category: 'purchase',
+      categoryLabel: 'Material Purchase',
+      method: 'DELETE',
+      endpoint: '/api/materials/:id',
+      title: 'Delete Material Purchase (Delete)',
+      description: 'Permanently remove a raw material purchase from MongoDB Atlas and memory store. Also available at /api/purchases/:id.',
+      responseBody: { success: true, id: 'pur1', deletedCount: 1 },
     },
 
     // --- WORKER SALARY API ---
@@ -698,9 +762,9 @@ export const ApiDocsPage: React.FC = () => {
           p: { xs: 2.5, sm: 3.5 },
           mb: 3,
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%)',
           color: '#ffffff',
-          boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.4)',
+          boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.35)',
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2 }}>
@@ -710,8 +774,8 @@ export const ApiDocsPage: React.FC = () => {
                 sx={{
                   p: 1,
                   borderRadius: 2,
-                  bgcolor: 'rgba(99, 102, 241, 0.2)',
-                  color: '#a5b4fc',
+                  bgcolor: 'rgba(52, 211, 153, 0.2)',
+                  color: '#34d399',
                   display: 'inline-flex',
                 }}
               >
